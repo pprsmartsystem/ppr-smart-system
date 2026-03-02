@@ -120,7 +120,7 @@ export default function HomePage() {
               <span className="bg-gradient-to-r from-primary-600 to-violet-600 bg-clip-text text-transparent"> corporate rewards</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              From virtual cards to gift vouchers, we've got your digital reward needs covered.
+              From virtual cards to gift vouchers, we&apos;ve got your digital reward needs covered.
             </p>
           </div>
           

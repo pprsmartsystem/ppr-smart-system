@@ -266,7 +266,7 @@ export default function AdminUsersPage() {
           <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
             <h2 className="text-2xl font-bold mb-4">Add Wallet Balance</h2>
             <p className="text-gray-600 mb-6">
-              Add balance to <strong>{selectedUser.name}</strong>'s wallet
+              Add balance to <strong>{selectedUser.name}</strong>&apos;s wallet
             </p>
             <form onSubmit={handleAddBalance} className="space-y-4">
               <div>
