@@ -1,0 +1,55 @@
+// MIDDLEWARE DISABLED - Using client-side auth instead
+// Rename this file back to middleware.js to enable
+
+import { NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+
+function verifyToken(token) {
+  try {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('JWT_SECRET not found in middleware');
+      return null;
+    }
+    return jwt.verify(token, secret);
+  } catch (error) {
+    console.error('Token verification failed:', error.message);
+    return null;
+  }
+}
+
+export function middleware(request) {
+  const { pathname } = request.nextUrl;
+  
+  const publicRoutes = ['/login', '/register', '/', '/test-auth'];
+  
+  if (pathname.startsWith('/api')) {
+    return NextResponse.next();
+  }
+  
+  if (publicRoutes.includes(pathname)) {
+    return NextResponse.next();
+  }
+  
+  const token = request.cookies.get('token')?.value;
+  
+  if (!token) {
+    console.log('No token found, redirecting to login');
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  
+  const user = verifyToken(token);
+  if (!user) {
+    console.log('Invalid token, redirecting to login');
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  
+  console.log('User authenticated:', user.email, 'accessing:', pathname);
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
+};
