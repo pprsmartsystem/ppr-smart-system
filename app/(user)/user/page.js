@@ -12,6 +12,7 @@ import {
   DocumentChartBarIcon,
   PlusIcon,
   ArrowUpIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import { formatCurrency } from '@/utils/cardUtils';
 
@@ -19,6 +20,7 @@ export default function UserDashboard() {
   const [user, setUser] = useState(null);
   const [cards, setCards] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [pendingSettlement, setPendingSettlement] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,6 +53,21 @@ export default function UserDashboard() {
       if (transactionsRes.ok) {
         const transactionsData = await transactionsRes.json();
         setTransactions(transactionsData.transactions || []);
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const pending = transactionsData.transactions
+          .filter(t => {
+            const txDate = new Date(t.createdAt);
+            txDate.setHours(0, 0, 0, 0);
+            return txDate.getTime() === today.getTime() && 
+                   t.type === 'debit' && 
+                   (t.description?.includes('Settlement initiated') || t.description?.includes('Card redeemed'));
+          })
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        setPendingSettlement(pending);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -126,11 +143,12 @@ export default function UserDashboard() {
           delay={0.2}
         />
         <StatsCard
-          title="Transactions"
-          value={transactions.length.toString()}
-          icon={DocumentChartBarIcon}
+          title="Pending Settlement"
+          value={formatCurrency(pendingSettlement)}
+          icon={ClockIcon}
           color="orange"
           delay={0.3}
+          subtitle="Next day to wallet"
         />
       </div>
 

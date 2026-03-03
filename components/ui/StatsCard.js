@@ -10,7 +10,8 @@ export default function StatsCard({
   trend, 
   trendValue,
   color = 'primary',
-  delay = 0 
+  delay = 0,
+  subtitle
 }) {
   const colorClasses = {
     primary: 'from-primary-500 to-violet-500',
@@ -41,6 +42,9 @@ export default function StatsCard({
           >
             {value}
           </motion.h3>
+          {subtitle && (
+            <p className="text-xs text-gray-500">{subtitle}</p>
+          )}
           {trend && (
             <div className="flex items-center space-x-1">
               {trend === 'up' ? (
