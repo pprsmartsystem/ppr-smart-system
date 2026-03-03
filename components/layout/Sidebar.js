@@ -53,8 +53,10 @@ const navigationItems = {
     { name: 'Wallet', href: '/user/wallet', icon: WalletIcon },
     { name: 'My Cards', href: '/user/cards', icon: CreditCardIcon },
     { name: 'Gateway', href: '/user/gateway', icon: ShieldCheckIcon },
+    { name: 'Settlement', href: '/user/settlement', icon: DocumentChartBarIcon },
     { name: 'Gift Vouchers', href: '/user/vouchers', icon: GiftIcon },
     { name: 'Transactions', href: '/user/transactions', icon: DocumentChartBarIcon },
+    { name: 'Settings', href: '/user/settings', icon: CogIcon },
   ],
 };
 
