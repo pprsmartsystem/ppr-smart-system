@@ -9,6 +9,7 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   PlusCircleIcon,
+  NoSymbolIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminUsersPage() {
@@ -67,6 +68,22 @@ export default function AdminUsersPage() {
       }
     } catch (error) {
       toast.error('Failed to reject user');
+    }
+  };
+
+  const handleBlock = async (userId) => {
+    try {
+      const res = await fetch('/api/admin/users/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (res.ok) {
+        toast.success('User blocked');
+        fetchUsers();
+      }
+    } catch (error) {
+      toast.error('Failed to block user');
     }
   };
 
@@ -227,6 +244,15 @@ export default function AdminUsersPage() {
                       >
                         <PlusCircleIcon className="w-5 h-5" />
                       </button>
+                      {user.status !== 'blocked' && (
+                        <button
+                          onClick={() => handleBlock(user._id)}
+                          className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                          title="Block User"
+                        >
+                          <NoSymbolIcon className="w-5 h-5" />
+                        </button>
+                      )}
                       {user.status === 'pending' && (
                         <>
                           <button

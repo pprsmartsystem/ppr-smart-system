@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCardIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { CreditCardIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 export default function AdminCardsPage() {
   const [users, setUsers] = useState([]);
+  const [cards, setCards] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ userId: '', amount: '', spendingLimit: '5000' });
 
   useEffect(() => {
     fetchUsers();
+    fetchCards();
   }, []);
 
   const fetchUsers = async () => {
@@ -19,6 +21,14 @@ export default function AdminCardsPage() {
     if (res.ok) {
       const data = await res.json();
       setUsers(data.users?.filter(u => u.status === 'approved') || []);
+    }
+  };
+
+  const fetchCards = async () => {
+    const res = await fetch('/api/admin/cards');
+    if (res.ok) {
+      const data = await res.json();
+      setCards(data.cards || []);
     }
   };
 
@@ -39,11 +49,33 @@ export default function AdminCardsPage() {
         toast.success('Card issued successfully!');
         setShowModal(false);
         setFormData({ userId: '', amount: '', spendingLimit: '5000' });
+        fetchCards();
       } else {
         toast.error('Failed to issue card');
       }
     } catch (error) {
       toast.error('Error issuing card');
+    }
+  };
+
+  const handleDeleteCard = async (cardId) => {
+    if (!confirm('Are you sure you want to delete this card?')) return;
+    
+    try {
+      const res = await fetch('/api/admin/cards/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardId }),
+      });
+      
+      if (res.ok) {
+        toast.success('Card deleted successfully!');
+        fetchCards();
+      } else {
+        toast.error('Failed to delete card');
+      }
+    } catch (error) {
+      toast.error('Error deleting card');
     }
   };
 
@@ -91,9 +123,60 @@ export default function AdminCardsPage() {
         </div>
       )}
 
-      <div className="stats-card text-center py-12">
-        <CreditCardIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">Click "Issue Card" to create a new card for users</p>
+      <div className="stats-card">
+        {cards.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-4 px-4 font-semibold text-gray-900">Card Number</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-900">User</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-900">Balance</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-900">Status</th>
+                  <th className="text-right py-4 px-4 font-semibold text-gray-900">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cards.map((card) => (
+                  <tr key={card._id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-4 px-4 font-mono">
+                      •••• •••• •••• {card.cardNumber.slice(-4)}
+                    </td>
+                    <td className="py-4 px-4">
+                      {card.userId?.name || 'Unknown'}
+                    </td>
+                    <td className="py-4 px-4">
+                      ₹{card.balance?.toFixed(2)}
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        card.status === 'active' ? 'bg-green-100 text-green-800' :
+                        card.status === 'frozen' ? 'bg-blue-100 text-blue-800' :
+                        'bg-red-100 text-red-800'
+                      } capitalize`}>
+                        {card.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <button
+                        onClick={() => handleDeleteCard(card._id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete Card"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <CreditCardIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">No cards issued yet</p>
+          </div>
+        )}
       </div>
     </div>
   );
