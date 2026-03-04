@@ -1,0 +1,273 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { DocumentCheckIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
+
+export default function KYCPage() {
+  const [formData, setFormData] = useState({
+    bankName: '',
+    accountNumber: '',
+    ifscCode: '',
+    otherDocumentRemark: '',
+  });
+  const [files, setFiles] = useState({});
+  const [uploading, setUploading] = useState(false);
+  const [kycStatus, setKycStatus] = useState(null);
+
+  useEffect(() => {
+    fetchKYCStatus();
+  }, []);
+
+  const fetchKYCStatus = async () => {
+    const res = await fetch('/api/user/kyc/status');
+    if (res.ok) {
+      const data = await res.json();
+      setKycStatus(data.kyc);
+    }
+  };
+
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'ml_default');
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/auto/upload`,
+      { method: 'POST', body: formData }
+    );
+
+    const data = await res.json();
+    return data.secure_url;
+  };
+
+  const handleFileChange = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5000000) {
+        toast.error('File size must be less than 5MB');
+        return;
+      }
+      if (!['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+        toast.error('Only PDF, JPG, JPEG, PNG allowed');
+        return;
+      }
+      setFiles({ ...files, [field]: file });
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setUploading(true);
+
+    try {
+      const uploadedUrls = {};
+
+      for (const [key, file] of Object.entries(files)) {
+        if (file) {
+          toast.loading(`Uploading ${key}...`);
+          uploadedUrls[key] = await uploadToCloudinary(file);
+          toast.dismiss();
+        }
+      }
+
+      const res = await fetch('/api/user/kyc/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ...formData, ...uploadedUrls }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success('KYC submitted successfully!');
+        fetchKYCStatus();
+      } else {
+        toast.error(data.error || 'Submission failed');
+      }
+    } catch (error) {
+      toast.error('Failed to submit KYC');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (kycStatus) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">KYC Verification</h1>
+          <p className="text-gray-600">Your KYC status</p>
+        </motion.div>
+
+        <div className={`stats-card ${
+          kycStatus.status === 'approved' ? 'bg-green-50 border-green-200' :
+          kycStatus.status === 'rejected' ? 'bg-red-50 border-red-200' :
+          'bg-yellow-50 border-yellow-200'
+        }`}>
+          <div className="text-center py-8">
+            <DocumentCheckIcon className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+            <h3 className="text-xl font-semibold mb-2 capitalize">{kycStatus.status}</h3>
+            <p className="text-gray-600">
+              {kycStatus.status === 'pending' && 'Your KYC is under review'}
+              {kycStatus.status === 'approved' && 'Your KYC has been approved'}
+              {kycStatus.status === 'rejected' && `Reason: ${kycStatus.rejectionReason || 'Please resubmit'}`}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">KYC Verification</h1>
+        <p className="text-gray-600">Complete your KYC to unlock all features</p>
+      </motion.div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="stats-card">
+          <h3 className="text-lg font-semibold mb-4">Bank Account Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
+              <input
+                type="text"
+                value={formData.bankName}
+                onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                className="input-field"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+              <input
+                type="text"
+                value={formData.accountNumber}
+                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                className="input-field"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">IFSC Code</label>
+              <input
+                type="text"
+                value={formData.ifscCode}
+                onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value })}
+                className="input-field"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Cancel Cheque/Bank Statement</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleFileChange(e, 'bankDocument')}
+                className="input-field"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="stats-card">
+          <h3 className="text-lg font-semibold mb-4">Identity Documents</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Aadhaar Front</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleFileChange(e, 'aadhaarFront')}
+                className="input-field"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Aadhaar Back</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleFileChange(e, 'aadhaarBack')}
+                className="input-field"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">PAN Card</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleFileChange(e, 'panCard')}
+                className="input-field"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="stats-card">
+          <h3 className="text-lg font-semibold mb-4">Business Documents (Optional)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">GST Certificate</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleFileChange(e, 'gstCertificate')}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">MSME/Udyam Certificate</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleFileChange(e, 'msmeCertificate')}
+                className="input-field"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="stats-card">
+          <h3 className="text-lg font-semibold mb-4">Other Document</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Document Name/Remark</label>
+              <input
+                type="text"
+                value={formData.otherDocumentRemark}
+                onChange={(e) => setFormData({ ...formData, otherDocumentRemark: e.target.value })}
+                placeholder="e.g., Business License, Registration Certificate"
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Document</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => handleFileChange(e, 'otherDocument')}
+                className="input-field"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          className="btn-primary w-full"
+          disabled={uploading}
+        >
+          {uploading ? 'Uploading...' : 'Submit KYC'}
+        </button>
+      </form>
+    </div>
+  );
+}

@@ -20,6 +20,7 @@ import {
   BuildingOfficeIcon,
   ShieldCheckIcon,
   DocumentChartBarIcon,
+  DocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 
 const navigationItems = {
@@ -29,6 +30,7 @@ const navigationItems = {
     { name: 'Wallet', href: '/admin/wallet', icon: WalletIcon },
     { name: 'Corporates', href: '/admin/corporates', icon: BuildingOfficeIcon },
     { name: 'Cards', href: '/admin/cards', icon: CreditCardIcon },
+    { name: 'KYC', href: '/admin/kyc', icon: DocumentCheckIcon },
     { name: 'Transactions', href: '/admin/transactions', icon: DocumentChartBarIcon },
     { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon },
@@ -54,6 +56,7 @@ const navigationItems = {
     { name: 'My Cards', href: '/user/cards', icon: CreditCardIcon },
     { name: 'Gateway', href: '/user/gateway', icon: ShieldCheckIcon },
     { name: 'Settlement', href: '/user/settlement', icon: DocumentChartBarIcon },
+    { name: 'KYC', href: '/user/kyc', icon: DocumentCheckIcon },
     { name: 'Gift Vouchers', href: '/user/vouchers', icon: GiftIcon },
     { name: 'Transactions', href: '/user/transactions', icon: DocumentChartBarIcon },
     { name: 'Settings', href: '/user/settings', icon: CogIcon },
