@@ -1,5 +1,5 @@
 export default function sitemap() {
-  const baseUrl = 'https://ppr-smart-system.vercel.app'; // Replace with your actual domain
+  const baseUrl = 'https://www.pprsmart.com';
 
   return [
     {

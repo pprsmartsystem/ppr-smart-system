@@ -5,6 +5,6 @@ export default function robots() {
       allow: '/',
       disallow: ['/admin/', '/user/', '/corporate/', '/employee/', '/api/'],
     },
-    sitemap: 'https://ppr-smart-system.vercel.app/sitemap.xml', // Replace with your actual domain
+    sitemap: 'https://www.pprsmart.com/sitemap.xml',
   };
 }
