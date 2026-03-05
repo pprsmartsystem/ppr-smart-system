@@ -19,6 +19,17 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="icon" href="/favicon.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17994581567"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'AW-17994581567');
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.className} antialiased`}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
