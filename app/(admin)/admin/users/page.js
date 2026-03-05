@@ -10,6 +10,8 @@ import {
   FunnelIcon,
   PlusCircleIcon,
   NoSymbolIcon,
+  EyeIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminUsersPage() {
@@ -20,6 +22,8 @@ export default function AdminUsersPage() {
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [balanceAmount, setBalanceAmount] = useState('');
+  const [showCardsModal, setShowCardsModal] = useState(false);
+  const [userCards, setUserCards] = useState([]);
 
   useEffect(() => {
     fetchUsers();
@@ -84,6 +88,36 @@ export default function AdminUsersPage() {
       }
     } catch (error) {
       toast.error('Failed to block user');
+    }
+  };
+
+  const handleUnblock = async (userId) => {
+    try {
+      const res = await fetch('/api/admin/users/unblock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (res.ok) {
+        toast.success('User unblocked');
+        fetchUsers();
+      }
+    } catch (error) {
+      toast.error('Failed to unblock user');
+    }
+  };
+
+  const handleViewCards = async (user) => {
+    setSelectedUser(user);
+    try {
+      const res = await fetch(`/api/admin/users/${user._id}/cards`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserCards(data.cards || []);
+        setShowCardsModal(true);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch cards');
     }
   };
 
@@ -244,7 +278,22 @@ export default function AdminUsersPage() {
                       >
                         <PlusCircleIcon className="w-5 h-5" />
                       </button>
-                      {user.status !== 'blocked' && (
+                      <button
+                        onClick={() => handleViewCards(user)}
+                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        title="View Cards"
+                      >
+                        <EyeIcon className="w-5 h-5" />
+                      </button>
+                      {user.status === 'blocked' ? (
+                        <button
+                          onClick={() => handleUnblock(user._id)}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Unblock User"
+                        >
+                          <CheckIcon className="w-5 h-5" />
+                        </button>
+                      ) : (
                         <button
                           onClick={() => handleBlock(user._id)}
                           className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
@@ -330,6 +379,74 @@ export default function AdminUsersPage() {
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* View Cards Modal */}
+      {showCardsModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-4xl w-full my-8">
+            <h2 className="text-2xl font-bold mb-6">{selectedUser.name}&apos;s Cards</h2>
+            
+            <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+              <p className="text-sm text-gray-600">User ID: <span className="font-mono font-medium">{selectedUser._id}</span></p>
+              <p className="text-sm text-gray-600">Email: <span className="font-medium">{selectedUser.email}</span></p>
+            </div>
+
+            {userCards.length > 0 ? (
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {userCards.map((card) => (
+                  <div key={card._id} className="p-4 border border-gray-200 rounded-xl">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Card Number</p>
+                        <p className="font-mono font-medium">{card.cardNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Expiry</p>
+                        <p className="font-medium">{card.expiryDate}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">CVV</p>
+                        <p className="font-mono font-medium text-lg">{card.cvv}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">4-Digit PIN</p>
+                        <p className="font-mono font-medium text-lg">{card.pin || 'Not set'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Balance</p>
+                        <p className="font-medium text-green-600">₹{card.balance?.toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Status</p>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          card.status === 'active' ? 'bg-green-100 text-green-800' :
+                          card.status === 'frozen' ? 'bg-blue-100 text-blue-800' :
+                          'bg-red-100 text-red-800'
+                        } capitalize`}>
+                          {card.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-8">No cards found</p>
+            )}
+
+            <button
+              onClick={() => {
+                setShowCardsModal(false);
+                setUserCards([]);
+                setSelectedUser(null);
+              }}
+              className="mt-6 btn-secondary w-full"
+            >
+              Close
+            </button>
           </motion.div>
         </div>
       )}

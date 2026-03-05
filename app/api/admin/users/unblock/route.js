@@ -20,15 +20,15 @@ export async function POST(request) {
     const user = await User.findById(userId);
     if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
 
-    user.status = 'blocked';
+    user.status = 'approved';
     await user.save();
 
     return NextResponse.json({ 
-      message: 'User blocked successfully',
+      message: 'User unblocked successfully',
       user: { id: user._id, name: user.name, status: user.status }
     });
   } catch (error) {
-    console.error('Block user error:', error);
+    console.error('Unblock user error:', error);
     return NextResponse.json({ message: error.message || 'Server error' }, { status: 500 });
   }
 }

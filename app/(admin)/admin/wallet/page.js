@@ -164,6 +164,7 @@ export default function AdminWalletPage() {
                 >
                   <option value="">Select reason</option>
                   <option value="Card Loading Amount">Card Loading Amount</option>
+                  <option value="Settlement">Settlement</option>
                   <option value="Commission">Commission</option>
                   <option value="Bonus">Bonus</option>
                   <option value="Refund">Refund</option>

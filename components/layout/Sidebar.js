@@ -21,6 +21,7 @@ import {
   ShieldCheckIcon,
   DocumentChartBarIcon,
   DocumentCheckIcon,
+  BellIcon,
 } from '@heroicons/react/24/outline';
 
 const navigationItems = {
@@ -31,6 +32,7 @@ const navigationItems = {
     { name: 'Corporates', href: '/admin/corporates', icon: BuildingOfficeIcon },
     { name: 'Cards', href: '/admin/cards', icon: CreditCardIcon },
     { name: 'KYC', href: '/admin/kyc', icon: DocumentCheckIcon },
+    { name: 'Notifications', href: '/admin/notifications', icon: BellIcon },
     { name: 'Transactions', href: '/admin/transactions', icon: DocumentChartBarIcon },
     { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon },

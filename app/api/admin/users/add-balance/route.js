@@ -38,7 +38,7 @@ export async function POST(request) {
       amount: parseFloat(amount),
       status: 'completed',
       description: reason,
-      reference: `ADMIN-${Date.now()}`,
+      reference: `UTR${Math.floor(100000000000 + Math.random() * 900000000000)}`,
     });
 
     return NextResponse.json({ 
