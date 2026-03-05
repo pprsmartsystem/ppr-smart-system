@@ -19,6 +19,7 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="icon" href="/favicon.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="google-site-verification" content="71GoRQgLCV3lmnKflKZfcr8AuiDWBwf8viHgGohJFlM" />
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17994581567"></script>
         <script
           dangerouslySetInnerHTML={{
