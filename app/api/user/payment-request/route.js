@@ -21,7 +21,7 @@ export async function POST(request) {
       type: 'payment_request',
       amount: parseFloat(amount),
       status: 'pending',
-      description: `Payment request - ${name}`,
+      description: 'Wallet Loading Request',
       reference: utrNumber,
       metadata: { name, utrNumber }
     });

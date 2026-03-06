@@ -29,7 +29,7 @@ export async function POST(request) {
       await user.save();
 
       transaction.status = 'completed';
-      transaction.description = 'Wallet loading done';
+      transaction.description = 'Loading Successful';
       await transaction.save();
 
       await Transaction.create({
@@ -37,7 +37,7 @@ export async function POST(request) {
         type: 'credit',
         amount: transaction.amount,
         status: 'completed',
-        description: 'Wallet loading done',
+        description: 'Loading Successful',
         reference: `LOAD${Date.now()}`,
         metadata: { approvedBy: 'admin', originalUTR: transaction.reference }
       });
