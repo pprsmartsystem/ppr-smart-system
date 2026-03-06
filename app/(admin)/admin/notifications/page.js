@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BellIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { BellIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 
 export default function AdminNotificationsPage() {
   const [notifications, setNotifications] = useState([]);
@@ -23,6 +24,25 @@ export default function AdminNotificationsPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePaymentAction = async (transactionId, action) => {
+    try {
+      const res = await fetch('/api/admin/payment-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId, action }),
+      });
+      
+      if (res.ok) {
+        toast.success(action === 'approve' ? 'Payment approved' : 'Payment rejected');
+        fetchNotifications();
+      } else {
+        toast.error('Action failed');
+      }
+    } catch (error) {
+      toast.error('Error processing request');
     }
   };
 
@@ -56,6 +76,30 @@ export default function AdminNotificationsPage() {
                   <p className="text-sm font-medium text-blue-600 mt-1">
                     Amount: ₹{notif.amount?.toFixed(2)}
                   </p>
+                  {notif.type === 'payment_request' && notif.metadata && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      <p>UTR: {notif.reference}</p>
+                      <p>Name: {notif.metadata.name}</p>
+                    </div>
+                  )}
+                  {notif.type === 'payment_request' && notif.status === 'pending' && (
+                    <div className="flex space-x-2 mt-3">
+                      <button
+                        onClick={() => handlePaymentAction(notif._id, 'approve')}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-1"
+                      >
+                        <CheckIcon className="w-4 h-4" />
+                        <span>Approve</span>
+                      </button>
+                      <button
+                        onClick={() => handlePaymentAction(notif._id, 'reject')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-1"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                        <span>Reject</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

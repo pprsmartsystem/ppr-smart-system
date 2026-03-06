@@ -12,6 +12,7 @@ import {
   NoSymbolIcon,
   EyeIcon,
   CheckIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminUsersPage() {
@@ -118,6 +119,24 @@ export default function AdminUsersPage() {
       }
     } catch (error) {
       toast.error('Failed to fetch cards');
+    }
+  };
+
+  const handleDelete = async (userId) => {
+    if (!confirm('Are you sure? This will delete user, cards, and transactions permanently.')) return;
+    
+    try {
+      const res = await fetch('/api/admin/users/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (res.ok) {
+        toast.success('User deleted');
+        fetchUsers();
+      }
+    } catch (error) {
+      toast.error('Failed to delete user');
     }
   };
 
@@ -284,6 +303,13 @@ export default function AdminUsersPage() {
                         title="View Cards"
                       >
                         <EyeIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user._id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete User"
+                      >
+                        <TrashIcon className="w-5 h-5" />
                       </button>
                       {user.status === 'blocked' ? (
                         <button

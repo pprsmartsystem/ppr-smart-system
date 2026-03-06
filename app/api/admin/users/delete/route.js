@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
+import Card from '@/models/Card';
 import Transaction from '@/models/Transaction';
 
-export async function GET() {
+export async function DELETE(request) {
   try {
     const token = cookies().get('token')?.value;
     if (!token) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -14,21 +16,17 @@ export async function GET() {
       return NextResponse.json({ message: 'Admin access required' }, { status: 403 });
     }
 
+    const { userId } = await request.json();
+    
     await connectDB();
     
-    const notifications = await Transaction.find({
-      $or: [
-        { type: 'debit', description: { $regex: 'Settlement initiated', $options: 'i' } },
-        { type: 'debit', description: { $regex: 'Card redeemed', $options: 'i' } },
-        { type: 'payment_request', status: 'pending' }
-      ]
-    })
-    .populate('userId', 'name email')
-    .sort({ createdAt: -1 })
-    .limit(50);
+    await Card.deleteMany({ userId });
+    await Transaction.deleteMany({ userId });
+    await User.findByIdAndDelete(userId);
 
-    return NextResponse.json({ notifications });
+    return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {
-    return NextResponse.json({ message: 'Server error' }, { status: 500 });
+    console.error('Delete user error:', error);
+    return NextResponse.json({ message: error.message || 'Server error' }, { status: 500 });
   }
 }
