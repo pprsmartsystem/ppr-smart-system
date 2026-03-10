@@ -4,7 +4,7 @@ export function middleware(request) {
   const { pathname } = request.nextUrl;
   
   // Public routes
-  const publicRoutes = ['/login', '/register', '/', '/test-auth'];
+  const publicRoutes = ['/login', '/register', '/', '/test-auth', '/about', '/contact', '/terms', '/privacy', '/products'];
   
   // Allow API routes
   if (pathname.startsWith('/api') || pathname.startsWith('/_next')) {

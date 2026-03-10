@@ -22,6 +22,7 @@ import {
   DocumentChartBarIcon,
   DocumentCheckIcon,
   BellIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 
 const navigationItems = {
@@ -32,9 +33,11 @@ const navigationItems = {
     { name: 'Corporates', href: '/admin/corporates', icon: BuildingOfficeIcon },
     { name: 'Cards', href: '/admin/cards', icon: CreditCardIcon },
     { name: 'KYC', href: '/admin/kyc', icon: DocumentCheckIcon },
+    { name: 'Support', href: '/admin/support', icon: ChatBubbleLeftRightIcon },
     { name: 'Notifications', href: '/admin/notifications', icon: BellIcon },
     { name: 'Transactions', href: '/admin/transactions', icon: DocumentChartBarIcon },
     { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
+    { name: 'Pages', href: '/admin/pages', icon: DocumentCheckIcon },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon },
   ],
   corporate: [
@@ -61,6 +64,7 @@ const navigationItems = {
     { name: 'KYC', href: '/user/kyc', icon: DocumentCheckIcon },
     { name: 'Gift Vouchers', href: '/user/vouchers', icon: GiftIcon },
     { name: 'Transactions', href: '/user/transactions', icon: DocumentChartBarIcon },
+    { name: 'Support', href: '/user/support', icon: ChatBubbleLeftRightIcon },
     { name: 'Settings', href: '/user/settings', icon: CogIcon },
   ],
 };

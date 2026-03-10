@@ -17,7 +17,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="google-site-verification" content="71GoRQgLCV3lmnKflKZfcr8AuiDWBwf8viHgGohJFlM" />
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17994581567"></script>
