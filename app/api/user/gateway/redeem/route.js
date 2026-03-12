@@ -22,6 +22,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid card details' }, { status: 400 });
     }
 
+    // Check if the card belongs to the logged-in user
+    if (card.userId.toString() !== decoded.userId) {
+      return NextResponse.json({ error: 'Unauthorized: This card does not belong to you' }, { status: 403 });
+    }
+
     if (card.pin !== pin) {
       return NextResponse.json({ error: 'Invalid PIN' }, { status: 400 });
     }
