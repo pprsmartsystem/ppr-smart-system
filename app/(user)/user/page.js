@@ -40,9 +40,10 @@ export default function UserDashboard() {
       const userData = await userRes.json();
       setUser(userData);
       
-      const [cardsRes, transactionsRes] = await Promise.all([
+      const [cardsRes, transactionsRes, settlementRes] = await Promise.all([
         fetch('/api/user/cards'),
         fetch('/api/user/transactions?limit=5'),
+        fetch('/api/user/settlement'),
       ]);
 
       if (cardsRes.ok) {
@@ -53,21 +54,11 @@ export default function UserDashboard() {
       if (transactionsRes.ok) {
         const transactionsData = await transactionsRes.json();
         setTransactions(transactionsData.transactions || []);
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const pending = transactionsData.transactions
-          .filter(t => {
-            const txDate = new Date(t.createdAt);
-            txDate.setHours(0, 0, 0, 0);
-            return txDate.getTime() === today.getTime() && 
-                   t.type === 'debit' && 
-                   (t.description?.includes('Settlement initiated') || t.description?.includes('Card redeemed'));
-          })
-          .reduce((sum, t) => sum + t.amount, 0);
-        
-        setPendingSettlement(pending);
+      }
+
+      if (settlementRes.ok) {
+        const settlementData = await settlementRes.json();
+        setPendingSettlement(settlementData.totalPending || 0);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
