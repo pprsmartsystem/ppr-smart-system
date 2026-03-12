@@ -204,9 +204,8 @@ export default function HomePage() {
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2">
-                <li><a href="mailto:support@pprsmart.com" className="text-gray-400 hover:text-white">support@pprsmart.com</a></li>
                 <li><a href="mailto:support@pprsmart.com" className="text-gray-400 hover:text-white">contact@pprsmartsystem.com</a></li>
-                {/* <li><span className="text-gray-400">+91 1800-XXX-XXXX</span></li> */}
+                <li><span className="text-gray-400">+91 9403893296</span></li>
               </ul>
             </div>
           </div>

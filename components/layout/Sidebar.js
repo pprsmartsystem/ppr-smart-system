@@ -33,6 +33,8 @@ const navigationItems = {
     { name: 'Corporates', href: '/admin/corporates', icon: BuildingOfficeIcon },
     { name: 'Cards', href: '/admin/cards', icon: CreditCardIcon },
     { name: 'KYC', href: '/admin/kyc', icon: DocumentCheckIcon },
+    { name: 'Settlement', href: '/admin/settlement', icon: BellIcon },
+    { name: 'Cashback', href: '/admin/cashback', icon: GiftIcon },
     { name: 'Support', href: '/admin/support', icon: ChatBubbleLeftRightIcon },
     { name: 'Notifications', href: '/admin/notifications', icon: BellIcon },
     { name: 'Transactions', href: '/admin/transactions', icon: DocumentChartBarIcon },
