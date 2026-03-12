@@ -17,6 +17,9 @@ export default function SettingsPage() {
   });
   const [paymentGateways, setPaymentGateways] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState('');
   const [newGateway, setNewGateway] = useState({
     name: '',
     type: 'qr_code',
@@ -27,6 +30,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchPaymentGateways();
+    fetchUsers();
   }, []);
 
   const fetchPaymentGateways = async () => {
@@ -34,6 +38,16 @@ export default function SettingsPage() {
     if (res.ok) {
       const data = await res.json();
       setPaymentGateways(data.gateways || []);
+    }
+  };
+
+  const fetchUsers = async () => {
+    const res = await fetch('/api/admin/users');
+    if (res.ok) {
+      const data = await res.json();
+      // Filter out admin users
+      const nonAdminUsers = (data.users || []).filter(u => u.role !== 'admin');
+      setUsers(nonAdminUsers);
     }
   };
 
@@ -100,6 +114,35 @@ export default function SettingsPage() {
     toast.success('Settings saved successfully!');
   };
 
+  const handleResetUserHistory = async () => {
+    if (!selectedUser) {
+      toast.error('Please select a user');
+      return;
+    }
+
+    if (!confirm('This will delete ALL cards, transactions, settlements, and cashbacks for this user. This action CANNOT be undone. Continue?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/users/reset-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser })
+      });
+
+      if (res.ok) {
+        toast.success('User history reset successfully');
+        setShowResetModal(false);
+        setSelectedUser('');
+      } else {
+        toast.error('Failed to reset user history');
+      }
+    } catch (error) {
+      toast.error('Failed to reset user history');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -163,6 +206,17 @@ export default function SettingsPage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
         <button onClick={handleSave} className="btn-primary">
           Save Settings
+        </button>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="stats-card">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Reset User History</h3>
+        <p className="text-sm text-gray-600 mb-4">Delete all cards, transactions, settlements, and cashbacks for a user. This action cannot be undone.</p>
+        <button
+          onClick={() => setShowResetModal(true)}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Reset User History
         </button>
       </motion.div>
 
@@ -260,6 +314,60 @@ export default function SettingsPage() {
                 <button type="submit" className="flex-1 btn-primary">Add Gateway</button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full">
+            <h2 className="text-2xl font-bold mb-4 text-red-600">Reset User History</h2>
+            <p className="text-gray-600 mb-6">This will permanently delete:</p>
+            <ul className="list-disc list-inside text-sm text-gray-600 mb-6 space-y-1">
+              <li>All virtual cards</li>
+              <li>All transactions</li>
+              <li>All settlements</li>
+              <li>All cashbacks</li>
+              <li>Wallet balance (reset to ₹0)</li>
+            </ul>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select User</label>
+              <select
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                className="input-field"
+                required
+              >
+                <option value="">-- Select User --</option>
+                {users.length > 0 ? (
+                  users.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.name} - {user.email} ({user.role})
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No users available</option>
+                )}
+              </select>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetModal(false);
+                  setSelectedUser('');
+                }}
+                className="flex-1 btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetUserHistory}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Reset History
+              </button>
+            </div>
           </motion.div>
         </div>
       )}
