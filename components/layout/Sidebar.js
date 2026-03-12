@@ -23,6 +23,7 @@ import {
   DocumentCheckIcon,
   BellIcon,
   ChatBubbleLeftRightIcon,
+  MegaphoneIcon,
 } from '@heroicons/react/24/outline';
 
 const navigationItems = {
@@ -36,6 +37,7 @@ const navigationItems = {
     { name: 'Settlement', href: '/admin/settlement', icon: BellIcon },
     { name: 'Cashback', href: '/admin/cashback', icon: GiftIcon },
     { name: 'Support', href: '/admin/support', icon: ChatBubbleLeftRightIcon },
+    { name: 'Broadcast', href: '/admin/broadcast', icon: MegaphoneIcon },
     { name: 'Notifications', href: '/admin/notifications', icon: BellIcon },
     { name: 'Transactions', href: '/admin/transactions', icon: DocumentChartBarIcon },
     { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },

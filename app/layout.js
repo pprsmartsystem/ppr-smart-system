@@ -1,6 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
+import BroadcastBar from '@/components/BroadcastBar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={`${inter.className} antialiased`}>
+        <BroadcastBar />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
           {children}
           <Toaster
