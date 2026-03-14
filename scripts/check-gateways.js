@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const MONGODB_URI = 'mongodb+srv://ppruser:Rashi1122@clusterppr.5haetqg.mongodb.net/?appName=Clusterppr';
+const MONGODB_URI = process.env.MONGODB_URI || 'your-mongodb-uri-here';
 
 async function checkGateways() {
   try {
