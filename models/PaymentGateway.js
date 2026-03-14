@@ -18,6 +18,11 @@ const paymentGatewaySchema = new mongoose.Schema({
     default: true,
   },
   instructions: String,
+  userType: {
+    type: String,
+    enum: ['user', 'distributor', 'all'],
+    default: 'user',
+  },
 }, {
   timestamps: true,
 });

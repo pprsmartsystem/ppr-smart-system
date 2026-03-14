@@ -26,11 +26,13 @@ export default function SettingsPage() {
     qrCodeUrl: '',
     paymentLink: '',
     instructions: '',
+    userType: 'user',
   });
 
   useEffect(() => {
     fetchPaymentGateways();
     fetchUsers();
+    fetchSettings();
   }, []);
 
   const fetchPaymentGateways = async () => {
@@ -38,6 +40,24 @@ export default function SettingsPage() {
     if (res.ok) {
       const data = await res.json();
       setPaymentGateways(data.gateways || []);
+    }
+  };
+
+  const fetchSettings = async () => {
+    const res = await fetch('/api/admin/settings');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.settings) {
+        setSettings({
+          currency: data.settings.currency || 'INR',
+          currencySymbol: data.settings.currencySymbol || '₹',
+          cardExpiryYears: data.settings.cardExpiryYears?.toString() || '3',
+          maxSpendingLimit: data.settings.maxSpendingLimit?.toString() || '100000',
+          minSpendingLimit: data.settings.minSpendingLimit?.toString() || '100',
+          allowUserRegistration: data.settings.allowUserRegistration ?? true,
+          requireApproval: data.settings.requireApproval ?? true,
+        });
+      }
     }
   };
 
@@ -62,7 +82,7 @@ export default function SettingsPage() {
       if (res.ok) {
         toast.success('Payment gateway added!');
         setShowModal(false);
-        setNewGateway({ name: '', type: 'qr_code', qrCodeUrl: '', paymentLink: '', instructions: '' });
+        setNewGateway({ name: '', type: 'qr_code', qrCodeUrl: '', paymentLink: '', instructions: '', userType: 'user' });
         fetchPaymentGateways();
       }
     } catch (error) {
@@ -110,8 +130,30 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSave = () => {
-    toast.success('Settings saved successfully!');
+  const handleSave = async () => {
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currency: settings.currency,
+          currencySymbol: settings.currencySymbol,
+          cardExpiryYears: parseInt(settings.cardExpiryYears),
+          maxSpendingLimit: parseInt(settings.maxSpendingLimit),
+          minSpendingLimit: parseInt(settings.minSpendingLimit),
+          allowUserRegistration: settings.allowUserRegistration,
+          requireApproval: settings.requireApproval,
+        })
+      });
+
+      if (res.ok) {
+        toast.success('Settings saved successfully!');
+      } else {
+        toast.error('Failed to save settings');
+      }
+    } catch (error) {
+      toast.error('Failed to save settings');
+    }
   };
 
   const handleResetUserHistory = async () => {
@@ -260,6 +302,18 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Available For</label>
+                <select
+                  value={newGateway.userType}
+                  onChange={(e) => setNewGateway({ ...newGateway, userType: e.target.value })}
+                  className="input-field"
+                >
+                  <option value="user">Regular Users</option>
+                  <option value="distributor">Distributors</option>
+                  <option value="all">All Users</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
                 <select
                   value={newGateway.type}
@@ -290,10 +344,10 @@ export default function SettingsPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Payment Link</label>
                   <input
-                    type="url"
+                    type="text"
                     value={newGateway.paymentLink}
                     onChange={(e) => setNewGateway({ ...newGateway, paymentLink: e.target.value })}
-                    placeholder="https://..."
+                    placeholder="razorpay.me/@pprsmartsystem"
                     className="input-field"
                     required
                   />

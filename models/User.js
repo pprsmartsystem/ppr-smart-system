@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'corporate', 'employee', 'user'],
+    enum: ['admin', 'corporate', 'employee', 'user', 'distributor'],
     required: true,
   },
   status: {
@@ -39,6 +39,10 @@ const userSchema = new mongoose.Schema({
     required: function() {
       return this.role === 'employee';
     },
+  },
+  distributorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
   },
   avatar: {
     type: String,

@@ -50,6 +50,9 @@ export default function TransactionsPage() {
                   <div className={`w-3 h-3 rounded-full ${transaction.type === 'credit' ? 'bg-green-500' : 'bg-red-500'}`}></div>
                   <div>
                     <p className="font-medium text-gray-900">{transaction.description}</p>
+                    {transaction.reference && (
+                      <p className="text-sm font-mono text-indigo-600 font-semibold">{transaction.reference}</p>
+                    )}
                     <p className="text-sm text-gray-500">
                       {new Date(transaction.createdAt).toLocaleString()}
                     </p>
@@ -66,9 +69,6 @@ export default function TransactionsPage() {
                   <span className={`text-lg font-semibold ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
                     {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
                   </span>
-                  {transaction.reference && (
-                    <p className="text-xs text-gray-500">{transaction.reference}</p>
-                  )}
                 </div>
               </div>
             ))}

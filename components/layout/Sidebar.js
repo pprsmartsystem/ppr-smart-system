@@ -30,6 +30,7 @@ const navigationItems = {
   admin: [
     { name: 'Dashboard', href: '/admin', icon: HomeIcon },
     { name: 'Users', href: '/admin/users', icon: UserGroupIcon },
+    { name: 'Distributors', href: '/admin/distributors', icon: UserGroupIcon },
     { name: 'Wallet', href: '/admin/wallet', icon: WalletIcon },
     { name: 'Corporates', href: '/admin/corporates', icon: BuildingOfficeIcon },
     { name: 'Cards', href: '/admin/cards', icon: CreditCardIcon },
@@ -43,6 +44,15 @@ const navigationItems = {
     { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
     { name: 'Pages', href: '/admin/pages', icon: DocumentCheckIcon },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon },
+  ],
+  distributor: [
+    { name: 'Dashboard', href: '/distributor', icon: HomeIcon },
+    { name: 'Users', href: '/distributor/users', icon: UserGroupIcon },
+    { name: 'Wallet', href: '/distributor/wallet', icon: WalletIcon },
+    { name: 'Recharge', href: '/distributor/recharge', icon: CreditCardIcon },
+    { name: 'Reports', href: '/distributor/reports', icon: DocumentChartBarIcon },
+    { name: 'Support', href: '/distributor/support', icon: ChatBubbleLeftRightIcon },
+    { name: 'Settings', href: '/distributor/settings', icon: CogIcon },
   ],
   corporate: [
     { name: 'Dashboard', href: '/corporate', icon: HomeIcon },

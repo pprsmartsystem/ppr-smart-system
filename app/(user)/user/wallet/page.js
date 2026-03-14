@@ -83,7 +83,7 @@ export default function WalletPage() {
                     </div>
                   )}
                   {gw.type === 'payment_link' && gw.paymentLink && (
-                    <a href={gw.paymentLink} target="_blank" rel="noopener noreferrer" className="btn-primary w-full text-center block">
+                    <a href={gw.paymentLink.startsWith('http') ? gw.paymentLink : `https://${gw.paymentLink}`} target="_blank" rel="noopener noreferrer" className="btn-primary w-full text-center block">
                       Pay Now
                     </a>
                   )}

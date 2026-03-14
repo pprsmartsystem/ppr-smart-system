@@ -38,13 +38,6 @@ const roles = [
     icon: BuildingOfficeIcon,
     color: 'from-purple-500 to-violet-500',
   },
-  {
-    id: 'admin',
-    name: 'System Admin',
-    description: 'Requires approval - Full system access',
-    icon: ShieldCheckIcon,
-    color: 'from-red-500 to-pink-500',
-  },
 ];
 
 export default function RegisterPage() {

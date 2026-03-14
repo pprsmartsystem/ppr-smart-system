@@ -29,13 +29,16 @@ export default function CorporateDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Mock data for now
-      setStats({
-        totalEmployees: 5,
-        walletBalance: 50000,
-        activeCards: 12,
-        monthlySpend: 8500,
-      });
+      const res = await fetch('/api/corporate/dashboard');
+      if (res.ok) {
+        const data = await res.json();
+        setStats({
+          totalEmployees: data.totalEmployees || 0,
+          walletBalance: data.walletBalance || 0,
+          activeCards: data.activeCards || 0,
+          monthlySpend: data.monthlySpend || 0,
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
