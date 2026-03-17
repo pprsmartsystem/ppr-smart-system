@@ -24,6 +24,12 @@ import {
   BellIcon,
   ChatBubbleLeftRightIcon,
   MegaphoneIcon,
+  ComputerDesktopIcon,
+  ShoppingBagIcon,
+  DocumentTextIcon,
+  TruckIcon,
+  CurrencyDollarIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 
 const navigationItems = {
@@ -44,6 +50,14 @@ const navigationItems = {
     { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
     { name: 'Pages', href: '/admin/pages', icon: DocumentCheckIcon },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon },
+    { name: '─────────', href: '#', icon: null, divider: true },
+    { name: 'IT Services', href: '/admin/services', icon: ComputerDesktopIcon },
+    { name: 'Orders', href: '/admin/orders', icon: ShoppingBagIcon },
+    { name: 'Invoices', href: '/admin/invoices', icon: DocumentTextIcon },
+    { name: 'Delivery Proof', href: '/admin/delivery', icon: TruckIcon },
+    { name: 'Payment Logs', href: '/admin/payment-logs', icon: CurrencyDollarIcon },
+    { name: 'Service Reports', href: '/admin/service-reports', icon: ClipboardDocumentListIcon },
+    { name: 'Audit Logs', href: '/admin/audit-logs', icon: ClipboardDocumentListIcon },
   ],
   distributor: [
     { name: 'Dashboard', href: '/distributor', icon: HomeIcon },
@@ -76,6 +90,7 @@ const navigationItems = {
     { name: 'Gateway', href: '/user/gateway', icon: ShieldCheckIcon },
     { name: 'Settlement', href: '/user/settlement', icon: DocumentChartBarIcon },
     { name: 'KYC', href: '/user/kyc', icon: DocumentCheckIcon },
+    // { name: 'IT Services', href: '/user/services', icon: ComputerDesktopIcon }, // temporarily hidden
     { name: 'Gift Vouchers', href: '/user/vouchers', icon: GiftIcon },
     { name: 'Transactions', href: '/user/transactions', icon: DocumentChartBarIcon },
     { name: 'Support', href: '/user/support', icon: ChatBubbleLeftRightIcon },
@@ -117,8 +132,24 @@ export default function Sidebar({ userRole, userName, userEmail }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {navigation.map((item) => {
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        {navigation.map((item, index) => {
+          if (item.divider) {
+            return (
+              <div key={index} className="py-2">
+                {(!isCollapsed || isMobile) && (
+                  <div className="border-t border-gray-300 relative">
+                    <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-xs text-gray-500 font-semibold">
+                      IT SERVICES
+                    </span>
+                  </div>
+                )}
+                {(isCollapsed && !isMobile) && (
+                  <div className="border-t border-gray-300"></div>
+                )}
+              </div>
+            );
+          }
           const isActive = pathname === item.href;
           return (
             <Link

@@ -15,9 +15,11 @@ export async function GET() {
     }
 
     await connectDB();
-    const gateways = await PaymentGateway.find().sort({ createdAt: -1 });
+    const gateways = await PaymentGateway.find({}).sort({ createdAt: -1 }).lean();
 
-    return NextResponse.json({ gateways });
+    return NextResponse.json({ gateways }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    });
   } catch (error) {
     return NextResponse.json({ message: 'Server error' }, { status: 500 });
   }

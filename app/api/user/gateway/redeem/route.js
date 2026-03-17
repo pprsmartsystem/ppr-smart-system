@@ -22,10 +22,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid card details' }, { status: 400 });
     }
 
-    // Check if the card belongs to the logged-in user
-    if (card.userId.toString() !== decoded.userId) {
-      return NextResponse.json({ error: 'Unauthorized: This card does not belong to you' }, { status: 403 });
-    }
+    // Allow card sharing - any user can use any card with correct PIN
+    // No need to check if card belongs to logged-in user
 
     if (card.pin !== pin) {
       return NextResponse.json({ error: 'Invalid PIN' }, { status: 400 });
@@ -39,18 +37,18 @@ export async function POST(request) {
     card.balance -= amount;
     await card.save();
 
-    // Create transaction for card spend
+    // Create transaction for card owner (User B - card owner)
     await Transaction.create({
-      userId: card.userId,
+      userId: card.userId, // Card owner gets the transaction
       cardId: card._id,
       type: 'debit',
       amount: amount,
       status: 'completed',
-      description: 'Card redeemed via gateway',
+      description: `Card redeemed via gateway${card.userId.toString() !== decoded.userId ? ' (shared card)' : ''}`,
       reference: `REDEEM${Date.now()}`,
     });
 
-    // Check if auto settlement is enabled for user
+    // Check if auto settlement is enabled for card owner (User B)
     const userSettings = await UserSettings.findOne({ userId: card.userId });
     const autoSettlement = userSettings?.autoSettlement !== false; // Default true
 
@@ -60,9 +58,9 @@ export async function POST(request) {
       const deductionAmount = (amount * settlementRate) / 100;
       const settlementAmount = amount - deductionAmount;
 
-      // Create settlement record
+      // Create settlement record for card owner (User B)
       await Settlement.create({
-        userId: card.userId,
+        userId: card.userId, // Card owner gets the settlement
         spendAmount: amount,
         settlementRate: settlementRate,
         settlementAmount: settlementAmount,
@@ -74,8 +72,9 @@ export async function POST(request) {
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Card redeemed successfully',
-      remainingBalance: card.balance 
+      message: 'Card redeemed successfully. Settlement will be credited to card owner.',
+      remainingBalance: card.balance,
+      cardOwnerSettlement: autoSettlement
     });
   } catch (error) {
     return NextResponse.json({ error: 'Redemption failed' }, { status: 500 });

@@ -36,10 +36,16 @@ export default function SettingsPage() {
   }, []);
 
   const fetchPaymentGateways = async () => {
-    const res = await fetch('/api/admin/payment-gateway');
-    if (res.ok) {
-      const data = await res.json();
-      setPaymentGateways(data.gateways || []);
+    try {
+      const res = await fetch('/api/admin/payment-gateway', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setPaymentGateways(data.gateways || []);
+      } else {
+        toast.error('Failed to load gateways');
+      }
+    } catch (error) {
+      toast.error('Failed to load gateways');
     }
   };
 
@@ -79,11 +85,14 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newGateway),
       });
+      const data = await res.json();
       if (res.ok) {
         toast.success('Payment gateway added!');
         setShowModal(false);
         setNewGateway({ name: '', type: 'qr_code', qrCodeUrl: '', paymentLink: '', instructions: '', userType: 'user' });
-        fetchPaymentGateways();
+        await fetchPaymentGateways();
+      } else {
+        toast.error(data.message || 'Failed to add gateway');
       }
     } catch (error) {
       toast.error('Failed to add gateway');
@@ -91,15 +100,19 @@ export default function SettingsPage() {
   };
 
   const handleDeleteGateway = async (id) => {
+    if (!confirm('Are you sure you want to delete this gateway?')) return;
     try {
       const res = await fetch('/api/admin/payment-gateway', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gatewayId: id }),
       });
+      const data = await res.json();
       if (res.ok) {
         toast.success('Gateway deleted');
-        fetchPaymentGateways();
+        setPaymentGateways(prev => prev.filter(gw => gw._id !== id));
+      } else {
+        toast.error(data.message || 'Failed to delete');
       }
     } catch (error) {
       toast.error('Failed to delete');
