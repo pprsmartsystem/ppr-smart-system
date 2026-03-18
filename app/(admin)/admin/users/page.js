@@ -13,6 +13,7 @@ import {
   EyeIcon,
   CheckIcon,
   TrashIcon,
+  ArrowRightCircleIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminUsersPage() {
@@ -25,10 +26,25 @@ export default function AdminUsersPage() {
   const [balanceAmount, setBalanceAmount] = useState('');
   const [showCardsModal, setShowCardsModal] = useState(false);
   const [userCards, setUserCards] = useState([]);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferUser, setTransferUser] = useState(null);
+  const [distributors, setDistributors] = useState([]);
+  const [selectedDistributorId, setSelectedDistributorId] = useState('');
 
   useEffect(() => {
     fetchUsers();
+    fetchDistributors();
   }, []);
+
+  const fetchDistributors = async () => {
+    try {
+      const res = await fetch('/api/admin/distributors');
+      if (res.ok) {
+        const data = await res.json();
+        setDistributors(data.distributors || []);
+      }
+    } catch {}
+  };
 
   const fetchUsers = async () => {
     try {
@@ -105,6 +121,29 @@ export default function AdminUsersPage() {
       }
     } catch (error) {
       toast.error('Failed to unblock user');
+    }
+  };
+
+  const handleTransferToDistributor = async () => {
+    if (!selectedDistributorId) { toast.error('Please select a distributor'); return; }
+    try {
+      const res = await fetch('/api/admin/users/transfer-to-distributor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: transferUser._id, distributorId: selectedDistributorId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message);
+        setShowTransferModal(false);
+        setTransferUser(null);
+        setSelectedDistributorId('');
+        fetchUsers();
+      } else {
+        toast.error(data.error || 'Transfer failed');
+      }
+    } catch (error) {
+      toast.error('Transfer failed');
     }
   };
 
@@ -244,6 +283,7 @@ export default function AdminUsersPage() {
                 <th className="text-left py-4 px-4 font-semibold text-gray-900">Role</th>
                 <th className="text-left py-4 px-4 font-semibold text-gray-900">Status</th>
                 <th className="text-left py-4 px-4 font-semibold text-gray-900">Wallet</th>
+                <th className="text-left py-4 px-4 font-semibold text-gray-900">Distributor</th>
                 <th className="text-left py-4 px-4 font-semibold text-gray-900">Joined</th>
                 <th className="text-right py-4 px-4 font-semibold text-gray-900">Actions</th>
               </tr>
@@ -281,6 +321,15 @@ export default function AdminUsersPage() {
                     <p className="text-gray-900 font-medium">₹{user.walletBalance?.toFixed(2) || '0.00'}</p>
                   </td>
                   <td className="py-4 px-4">
+                    {user.distributorId ? (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        {distributors.find(d => d._id === (user.distributorId?._id || user.distributorId))?.name || 'Assigned'}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-4">
                     <p className="text-gray-600 text-sm">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </p>
@@ -304,6 +353,15 @@ export default function AdminUsersPage() {
                       >
                         <EyeIcon className="w-5 h-5" />
                       </button>
+                      {user.role !== 'distributor' && user.role !== 'admin' && (
+                        <button
+                          onClick={() => { setTransferUser(user); setShowTransferModal(true); }}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Transfer to Distributor"
+                        >
+                          <ArrowRightCircleIcon className="w-5 h-5" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDelete(user._id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -360,6 +418,59 @@ export default function AdminUsersPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Transfer to Distributor Modal */}
+      {showTransferModal && transferUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold mb-2">Assign to Distributor</h2>
+            <p className="text-gray-500 text-sm mb-6">Assign this user under a distributor. All wallet, cards, and transaction history will be preserved.</p>
+
+            <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Name:</span>
+                <span className="font-semibold">{transferUser.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Email:</span>
+                <span className="font-semibold">{transferUser.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Wallet:</span>
+                <span className="font-semibold text-green-600">₹{transferUser.walletBalance?.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Current Distributor:</span>
+                <span className="font-semibold">{transferUser.distributorId ? distributors.find(d => d._id === transferUser.distributorId)?.name || 'Assigned' : 'None'}</span>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Distributor</label>
+              <select
+                value={selectedDistributorId}
+                onChange={(e) => setSelectedDistributorId(e.target.value)}
+                className="input-field"
+                required
+              >
+                <option value="">-- Select Distributor --</option>
+                {distributors.map(d => (
+                  <option key={d._id} value={d._id}>{d.name} ({d.email})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
+              <p className="text-xs text-green-800">✓ Wallet balance preserved<br />✓ All cards remain intact<br />✓ Full transaction history kept<br />✓ Login credentials unchanged</p>
+            </div>
+
+            <div className="flex space-x-3">
+              <button onClick={() => { setShowTransferModal(false); setTransferUser(null); setSelectedDistributorId(''); }} className="flex-1 btn-secondary">Cancel</button>
+              <button onClick={handleTransferToDistributor} className="flex-1 btn-primary">Assign</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Add Balance Modal */}
       {showBalanceModal && selectedUser && (

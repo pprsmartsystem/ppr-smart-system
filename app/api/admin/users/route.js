@@ -16,7 +16,7 @@ export async function GET() {
     }
 
     await connectDB();
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const users = await User.find().select('-password').populate('distributorId', 'name email').sort({ createdAt: -1 });
     
     // Get user settings for each user
     const usersWithSettings = await Promise.all(
