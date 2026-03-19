@@ -50,3 +50,22 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const token = cookies().get('token')?.value;
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const decoded = verifyToken(token);
+    if (!decoded || decoded.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
+    await connectDB();
+    const { ticketId } = await request.json();
+    await Ticket.findByIdAndDelete(ticketId);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+  }
+}

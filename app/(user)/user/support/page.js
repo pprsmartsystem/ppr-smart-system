@@ -86,7 +86,7 @@ export default function UserSupportPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-gray-900">{ticket.subject}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{ticket.message.substring(0, 100)}...</p>
+                    <p className="text-sm text-gray-600 mt-1">{(ticket.replies?.[0]?.isAdmin ? ticket.replies[0].message : ticket.message).substring(0, 100)}...</p>
                     <p className="text-xs text-gray-500 mt-2">{new Date(ticket.createdAt).toLocaleDateString()}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -107,10 +107,13 @@ export default function UserSupportPage() {
           <h2 className="text-xl font-bold mb-4">{selectedTicket.subject}</h2>
           
           <div className="space-y-4 mb-6">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">You</p>
-              <p>{selectedTicket.message}</p>
-            </div>
+            {/* Only show original message if ticket was created by user (not admin-initiated) */}
+            {!selectedTicket.replies?.[0]?.isAdmin && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">You</p>
+                <p>{selectedTicket.message}</p>
+              </div>
+            )}
             
             {selectedTicket.replies?.map((reply, i) => (
               <div key={i} className={`p-4 rounded-lg ${reply.isAdmin ? 'bg-blue-50' : 'bg-gray-50'}`}>
