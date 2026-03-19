@@ -95,6 +95,73 @@ export default function KYCPage() {
   };
 
   if (kycStatus) {
+    // Allow resubmission form for rejected or rekyc
+    if (kycStatus.status === 'rekyc' || kycStatus.status === 'rejected') {
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">KYC Verification</h1>
+            <p className="text-gray-600">Please resubmit your KYC documents</p>
+          </motion.div>
+
+          <div className={`p-4 rounded-xl border ${
+            kycStatus.status === 'rekyc' ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-200'
+          }`}>
+            <p className="font-semibold text-gray-900 mb-1">
+              {kycStatus.status === 'rekyc' ? '🔄 Re-KYC Required' : '❌ KYC Rejected'}
+            </p>
+            <p className="text-sm text-gray-700">
+              <strong>Reason:</strong> {kycStatus.rekycReason || kycStatus.rejectionReason || 'Please resubmit your documents'}
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="stats-card">
+              <h3 className="text-lg font-semibold mb-4">Bank Account Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
+                  <input type="text" value={formData.bankName} onChange={(e) => setFormData({ ...formData, bankName: e.target.value })} className="input-field" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+                  <input type="text" value={formData.accountNumber} onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })} className="input-field" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">IFSC Code</label>
+                  <input type="text" value={formData.ifscCode} onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value })} className="input-field" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cancel Cheque/Bank Statement</label>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileChange(e, 'bankDocument')} className="input-field" />
+                </div>
+              </div>
+            </div>
+            <div className="stats-card">
+              <h3 className="text-lg font-semibold mb-4">Identity Documents</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Aadhaar Front</label>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileChange(e, 'aadhaarFront')} className="input-field" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Aadhaar Back</label>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileChange(e, 'aadhaarBack')} className="input-field" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">PAN Card</label>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileChange(e, 'panCard')} className="input-field" />
+                </div>
+              </div>
+            </div>
+            <button type="submit" className="btn-primary w-full" disabled={uploading}>
+              {uploading ? 'Uploading...' : 'Resubmit KYC'}
+            </button>
+          </form>
+        </div>
+      );
+    }
+
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -104,16 +171,14 @@ export default function KYCPage() {
 
         <div className={`stats-card ${
           kycStatus.status === 'approved' ? 'bg-green-50 border-green-200' :
-          kycStatus.status === 'rejected' ? 'bg-red-50 border-red-200' :
           'bg-yellow-50 border-yellow-200'
         }`}>
           <div className="text-center py-8">
             <DocumentCheckIcon className="w-16 h-16 mx-auto mb-4 text-gray-600" />
             <h3 className="text-xl font-semibold mb-2 capitalize">{kycStatus.status}</h3>
             <p className="text-gray-600">
-              {kycStatus.status === 'pending' && 'Your KYC is under review'}
-              {kycStatus.status === 'approved' && 'Your KYC has been approved'}
-              {kycStatus.status === 'rejected' && `Reason: ${kycStatus.rejectionReason || 'Please resubmit'}`}
+              {kycStatus.status === 'pending' && 'Your KYC is under review. We will notify you once reviewed.'}
+              {kycStatus.status === 'approved' && 'Your KYC has been approved. All features are unlocked.'}
             </p>
           </div>
         </div>

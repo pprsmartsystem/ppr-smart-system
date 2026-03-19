@@ -20,6 +20,19 @@ export async function POST(request) {
 
     const existingKYC = await KYC.findOne({ userId: decoded.userId });
     if (existingKYC) {
+      // Allow resubmission only if status is rekyc or rejected
+      if (existingKYC.status === 'rekyc' || existingKYC.status === 'rejected') {
+        Object.assign(existingKYC, {
+          ...data,
+          status: 'pending',
+          rekycReason: null,
+          rejectionReason: null,
+          submittedAt: new Date(),
+          reviewedAt: null,
+        });
+        await existingKYC.save();
+        return NextResponse.json({ success: true, message: 'KYC resubmitted successfully' });
+      }
       return NextResponse.json({ error: 'KYC already submitted' }, { status: 400 });
     }
 

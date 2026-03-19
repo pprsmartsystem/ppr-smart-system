@@ -19,10 +19,11 @@ const kycSchema = new mongoose.Schema({
   otherDocumentRemark: String,
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'rejected', 'rekyc'],
     default: 'pending',
   },
   rejectionReason: String,
+  rekycReason: String,
   submittedAt: {
     type: Date,
     default: Date.now,
