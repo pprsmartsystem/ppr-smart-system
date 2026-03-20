@@ -14,6 +14,7 @@ import {
   CheckIcon,
   TrashIcon,
   ArrowRightCircleIcon,
+  MinusCircleIcon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminUsersPage() {
@@ -30,6 +31,9 @@ export default function AdminUsersPage() {
   const [transferUser, setTransferUser] = useState(null);
   const [distributors, setDistributors] = useState([]);
   const [selectedDistributorId, setSelectedDistributorId] = useState('');
+  const [showDeductModal, setShowDeductModal] = useState(false);
+  const [deductAmount, setDeductAmount] = useState('');
+  const [deductRemark, setDeductRemark] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -122,6 +126,28 @@ export default function AdminUsersPage() {
     } catch (error) {
       toast.error('Failed to unblock user');
     }
+  };
+
+  const handleDeductBalance = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/users/deduct-balance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser._id, amount: parseFloat(deductAmount), remark: deductRemark }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message);
+        setShowDeductModal(false);
+        setDeductAmount('');
+        setDeductRemark('');
+        setSelectedUser(null);
+        fetchUsers();
+      } else {
+        toast.error(data.error || 'Failed to deduct balance');
+      }
+    } catch { toast.error('Error deducting balance'); }
   };
 
   const handleTransferToDistributor = async () => {
@@ -318,7 +344,10 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="py-4 px-4">
-                    <p className="text-gray-900 font-medium">₹{user.walletBalance?.toFixed(2) || '0.00'}</p>
+                    <p className={`font-medium ${user.walletBalance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                      {user.walletBalance < 0 ? '-' : ''}₹{Math.abs(user.walletBalance?.toFixed(2) || 0)}
+                      {user.walletBalance < 0 && <span className="ml-1 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">Debt</span>}
+                    </p>
                   </td>
                   <td className="py-4 px-4">
                     {user.distributorId ? (
@@ -345,6 +374,16 @@ export default function AdminUsersPage() {
                         title="Add Balance"
                       >
                         <PlusCircleIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setShowDeductModal(true);
+                        }}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Deduct Balance"
+                      >
+                        <MinusCircleIcon className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleViewCards(user)}
@@ -418,6 +457,59 @@ export default function AdminUsersPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Deduct Balance Modal */}
+      {showDeductModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold mb-2 text-red-600">Deduct Wallet Balance</h2>
+            <p className="text-gray-500 text-sm mb-6">Deduct amount from <strong>{selectedUser.name}</strong>&apos;s wallet</p>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <p className="text-sm text-gray-600">Current Balance</p>
+              <p className="text-2xl font-bold text-gray-900">₹{selectedUser.walletBalance?.toFixed(2) || '0.00'}</p>
+            </div>
+            <form onSubmit={handleDeductBalance} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Amount to Deduct (₹)</label>
+                <input
+                  type="number"
+                  value={deductAmount}
+                  onChange={(e) => setDeductAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  min="1"
+                  step="0.01"
+                  required
+                  className="input-field"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Remark</label>
+                <textarea
+                  value={deductRemark}
+                  onChange={(e) => setDeductRemark(e.target.value)}
+                  placeholder="e.g. Penalty charge, Refund adjustment, Fee deduction"
+                  className="input-field"
+                  rows="3"
+                  required
+                />
+              </div>
+              <div className="flex space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowDeductModal(false); setDeductAmount(''); setDeductRemark(''); setSelectedUser(null); }}
+                  className="flex-1 btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                  Deduct
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
 
       {/* Transfer to Distributor Modal */}
       {showTransferModal && transferUser && (

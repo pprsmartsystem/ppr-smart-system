@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
+import { creditWallet } from '@/utils/walletUtils';
 
 export async function POST(request) {
   try {
@@ -15,39 +16,23 @@ export async function POST(request) {
     }
 
     const { userId, amount, reason } = await request.json();
-    
-    if (!amount || amount <= 0) {
-      return NextResponse.json({ message: 'Invalid amount' }, { status: 400 });
-    }
 
-    if (!reason) {
-      return NextResponse.json({ message: 'Reason is required' }, { status: 400 });
-    }
+    if (!amount || amount <= 0) return NextResponse.json({ message: 'Invalid amount' }, { status: 400 });
+    if (!reason) return NextResponse.json({ message: 'Reason is required' }, { status: 400 });
 
     await connectDB();
     const user = await User.findById(userId);
     if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
 
-    user.walletBalance += parseFloat(amount);
-    await user.save();
+    const result = await creditWallet(user, parseFloat(amount), reason, 'ADM-CR');
 
-    const Transaction = (await import('@/models/Transaction')).default;
-    await Transaction.create({
-      userId: user._id,
-      type: 'credit',
-      amount: parseFloat(amount),
-      status: 'completed',
-      description: reason,
-      reference: `UTR${Math.floor(100000000000 + Math.random() * 900000000000)}`,
-    });
+    const msg = result.debtSettled > 0
+      ? `₹${amount} added. ₹${result.debtSettled.toFixed(2)} auto-deducted to settle debt.`
+      : 'Balance added successfully';
 
-    return NextResponse.json({ 
-      message: 'Balance added successfully', 
-      user: {
-        id: user._id,
-        name: user.name,
-        walletBalance: user.walletBalance
-      }
+    return NextResponse.json({
+      message: msg,
+      user: { id: user._id, name: user.name, walletBalance: result.newBalance },
     });
   } catch (error) {
     return NextResponse.json({ message: 'Server error' }, { status: 500 });

@@ -31,7 +31,6 @@ const userSchema = new mongoose.Schema({
   walletBalance: {
     type: Number,
     default: 0,
-    min: 0,
   },
   corporateId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -62,4 +61,5 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ email: 1 });
 userSchema.index({ role: 1, status: 1 });
 
-export default mongoose.models.User || mongoose.model('User', userSchema);
+delete mongoose.models.User;
+export default mongoose.model('User', userSchema);

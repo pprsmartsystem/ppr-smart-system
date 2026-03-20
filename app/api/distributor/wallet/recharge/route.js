@@ -36,13 +36,9 @@ export async function POST(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Deduct from distributor wallet
-    distributor.walletBalance -= amount;
-    await distributor.save();
-
-    // Add to user wallet
-    user.walletBalance += amount;
-    await user.save();
+    // Add to user wallet with auto debt settlement
+    const { creditWallet } = await import('@/utils/walletUtils');
+    await creditWallet(user, amount, 'Wallet recharged by distributor', 'DIST');
 
     // Create transaction for distributor (debit)
     await Transaction.create({
@@ -54,17 +50,7 @@ export async function POST(request) {
       reference: `DIST${Date.now()}`
     });
 
-    // Create transaction for user (credit)
-    await Transaction.create({
-      userId: userId,
-      type: 'credit',
-      amount: amount,
-      status: 'completed',
-      description: 'Wallet recharged by distributor',
-      reference: `DIST${Date.now()}`
-    });
-
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       distributorBalance: distributor.walletBalance,
       userBalance: user.walletBalance
