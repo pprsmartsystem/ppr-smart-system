@@ -9,11 +9,14 @@ export default function BroadcastBar() {
 
   useEffect(() => {
     fetchBroadcast();
+    // Re-check every 30 seconds so deleted broadcasts disappear
+    const interval = setInterval(fetchBroadcast, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchBroadcast = async () => {
     try {
-      const res = await fetch('/api/broadcast');
+      const res = await fetch('/api/broadcast', { cache: 'no-store' });
       const data = await res.json();
       if (data.broadcast) {
         const dismissed = localStorage.getItem(`broadcast-${data.broadcast._id}`);
@@ -21,6 +24,10 @@ export default function BroadcastBar() {
           setBroadcast(data.broadcast);
           setIsVisible(true);
         }
+      } else {
+        // No active broadcast — hide immediately
+        setBroadcast(null);
+        setIsVisible(false);
       }
     } catch (error) {
       console.error('Failed to fetch broadcast:', error);
