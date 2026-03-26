@@ -22,7 +22,10 @@ export default function WalletPage() {
   };
 
   const fetchPaymentGateways = async () => {
-    const res = await fetch('/api/user/payment-gateway');
+    const res = await fetch('/api/user/payment-gateway', {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
     if (res.ok) {
       const data = await res.json();
       setPaymentGateways(data.gateways || []);

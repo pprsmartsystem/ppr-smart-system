@@ -7,7 +7,9 @@ export async function GET() {
     await connectDB();
     const gateways = await PaymentGateway.find({ isActive: true }).sort({ createdAt: -1 });
 
-    return NextResponse.json({ gateways });
+    return NextResponse.json({ gateways }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    });
   } catch (error) {
     return NextResponse.json({ message: 'Server error' }, { status: 500 });
   }
