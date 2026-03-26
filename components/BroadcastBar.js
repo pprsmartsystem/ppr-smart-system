@@ -9,8 +9,7 @@ export default function BroadcastBar() {
 
   useEffect(() => {
     fetchBroadcast();
-    // Re-check every 30 seconds so deleted broadcasts disappear
-    const interval = setInterval(fetchBroadcast, 30000);
+    const interval = setInterval(fetchBroadcast, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -19,13 +18,20 @@ export default function BroadcastBar() {
       const res = await fetch('/api/broadcast', { cache: 'no-store' });
       const data = await res.json();
       if (data.broadcast) {
+        // Clear any old broadcast dismissed keys that don't match current ID
+        Object.keys(localStorage)
+          .filter(k => k.startsWith('broadcast-') && k !== `broadcast-${data.broadcast._id}`)
+          .forEach(k => localStorage.removeItem(k));
+
         const dismissed = localStorage.getItem(`broadcast-${data.broadcast._id}`);
         if (!dismissed) {
           setBroadcast(data.broadcast);
           setIsVisible(true);
+        } else {
+          setBroadcast(null);
+          setIsVisible(false);
         }
       } else {
-        // No active broadcast — hide immediately
         setBroadcast(null);
         setIsVisible(false);
       }

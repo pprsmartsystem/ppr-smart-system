@@ -34,7 +34,7 @@ export async function POST(request) {
     await Broadcast.updateMany({}, { isActive: false });
 
     const broadcast = await Broadcast.create({ message, isActive: true });
-    return NextResponse.json({ broadcast });
+    return NextResponse.json({ broadcast, clearLocalStorage: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

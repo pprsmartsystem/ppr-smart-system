@@ -36,12 +36,16 @@ export async function POST(request) {
     }
 
     await connectDB();
-    const { action, userId, settlementId, enabled, spendAmount } = await request.json();
+    const { action, userId, settlementId, settlementIds, enabled, spendAmount } = await request.json();
 
+    // Process single settlement
     if (action === 'process' && settlementId) {
       const settlement = await Settlement.findById(settlementId);
+      if (!settlement || settlement.status === 'processed') {
+        return NextResponse.json({ error: 'Settlement not found or already processed' }, { status: 400 });
+      }
       const user = await User.findById(settlement.userId);
-      
+
       user.walletBalance += settlement.settlementAmount;
       await user.save();
 
@@ -61,6 +65,34 @@ export async function POST(request) {
       return NextResponse.json({ success: true, message: 'Settlement processed' });
     }
 
+    // Bulk process settlements
+    if (action === 'bulk_process' && settlementIds?.length) {
+      const settlements = await Settlement.find({ _id: { $in: settlementIds }, status: 'pending' });
+      let count = 0;
+
+      for (const settlement of settlements) {
+        const user = await User.findById(settlement.userId);
+        user.walletBalance += settlement.settlementAmount;
+        await user.save();
+
+        settlement.status = 'processed';
+        settlement.processedAt = new Date();
+        await settlement.save();
+
+        await Transaction.create({
+          userId: settlement.userId,
+          type: 'credit',
+          amount: settlement.settlementAmount,
+          status: 'completed',
+          description: 'Settlement',
+          reference: `SETTLE${Date.now()}-${count}`,
+        });
+        count++;
+      }
+
+      return NextResponse.json({ success: true, message: `${count} settlements processed` });
+    }
+
     if (action === 'toggle_auto' && userId) {
       const settings = await UserSettings.findOneAndUpdate(
         { userId },
@@ -73,7 +105,7 @@ export async function POST(request) {
     if (action === 'create_settlement' && userId && spendAmount) {
       const settlementRate = 1.77;
       const deductionAmount = (spendAmount * settlementRate) / 100;
-      const settlementAmount = spendAmount - deductionAmount; // Spend minus deduction
+      const settlementAmount = spendAmount - deductionAmount;
 
       const settlement = await Settlement.create({
         userId,
@@ -90,5 +122,27 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to process' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const token = cookies().get('token')?.value;
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const decoded = verifyToken(token);
+    if (!decoded || decoded.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
+    await connectDB();
+    const { settlementIds } = await request.json();
+    const ids = Array.isArray(settlementIds) ? settlementIds : [settlementIds];
+
+    await Settlement.deleteMany({ _id: { $in: ids } });
+
+    return NextResponse.json({ success: true, deleted: ids.length });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
   }
 }

@@ -36,6 +36,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Deduct from distributor wallet
+    distributor.walletBalance -= amount;
+    await distributor.save();
+
     // Add to user wallet with auto debt settlement
     const { creditWallet } = await import('@/utils/walletUtils');
     await creditWallet(user, amount, 'Wallet recharged by distributor', 'DIST');
