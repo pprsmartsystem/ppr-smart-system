@@ -24,7 +24,9 @@ export async function GET() {
       userType: { $in: ['distributor', 'all'] }
     }).sort({ createdAt: -1 });
 
-    return NextResponse.json({ gateways });
+    return NextResponse.json({ gateways }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
