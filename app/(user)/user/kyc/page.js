@@ -7,6 +7,8 @@ import { DocumentCheckIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline
 
 export default function KYCPage() {
   const [formData, setFormData] = useState({
+    contactNumber: '',
+    panNumber: '',
     bankName: '',
     accountNumber: '',
     ifscCode: '',
@@ -117,6 +119,19 @@ export default function KYCPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="stats-card">
+              <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
+                  <input type="tel" value={formData.contactNumber} onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })} className="input-field" placeholder="10-digit mobile number" pattern="[0-9]{10}" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">PAN Card Number</label>
+                  <input type="text" value={formData.panNumber} onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })} className="input-field" placeholder="ABCDE1234F" pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}" maxLength="10" required />
+                </div>
+              </div>
+            </div>
+            <div className="stats-card">
               <h3 className="text-lg font-semibold mb-4">Bank Account Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -194,6 +209,37 @@ export default function KYCPage() {
       </motion.div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="stats-card">
+          <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
+              <input
+                type="tel"
+                value={formData.contactNumber}
+                onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+                className="input-field"
+                placeholder="10-digit mobile number"
+                pattern="[0-9]{10}"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">PAN Card Number</label>
+              <input
+                type="text"
+                value={formData.panNumber}
+                onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })}
+                className="input-field"
+                placeholder="ABCDE1234F"
+                pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
+                maxLength="10"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="stats-card">
           <h3 className="text-lg font-semibold mb-4">Bank Account Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

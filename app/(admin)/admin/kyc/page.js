@@ -154,6 +154,14 @@ export default function AdminKYCPage() {
             <div className="space-y-6 max-h-96 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <p className="text-sm text-gray-600">Contact Number</p>
+                  <p className="font-medium">{selectedKYC.contactNumber || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">PAN Card Number</p>
+                  <p className="font-medium">{selectedKYC.panNumber || 'N/A'}</p>
+                </div>
+                <div>
                   <p className="text-sm text-gray-600">Bank Name</p>
                   <p className="font-medium">{selectedKYC.bankName}</p>
                 </div>

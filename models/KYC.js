@@ -6,6 +6,8 @@ const kycSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  contactNumber: String,
+  panNumber: String,
   bankName: String,
   accountNumber: String,
   ifscCode: String,
