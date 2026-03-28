@@ -15,6 +15,7 @@ export default function AdminCashbackPage() {
   const [selectedPending, setSelectedPending] = useState([]);
   const [selectedProcessed, setSelectedProcessed] = useState([]);
   const [filter, setFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState({ startDate: '', endDate: '' });
 
   useEffect(() => {
     fetchData();
@@ -145,8 +146,33 @@ export default function AdminCashbackPage() {
     }
   };
 
-  const pendingCashbacks = cashbacks.filter(c => c.status === 'pending');
-  const processedCashbacks = cashbacks.filter(c => c.status === 'processed');
+  const pendingCashbacks = cashbacks.filter(c => {
+    if (c.status !== 'pending') return false;
+    if (dateFilter.startDate || dateFilter.endDate) {
+      const cashbackDate = new Date(c.createdAt);
+      if (dateFilter.startDate && cashbackDate < new Date(dateFilter.startDate)) return false;
+      if (dateFilter.endDate) {
+        const endDate = new Date(dateFilter.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        if (cashbackDate > endDate) return false;
+      }
+    }
+    return true;
+  });
+  
+  const processedCashbacks = cashbacks.filter(c => {
+    if (c.status !== 'processed') return false;
+    if (dateFilter.startDate || dateFilter.endDate) {
+      const cashbackDate = new Date(c.processedAt || c.createdAt);
+      if (dateFilter.startDate && cashbackDate < new Date(dateFilter.startDate)) return false;
+      if (dateFilter.endDate) {
+        const endDate = new Date(dateFilter.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        if (cashbackDate > endDate) return false;
+      }
+    }
+    return true;
+  });
   const filteredUsers = filter === 'all' ? users : users.filter(u => 
     filter === 'enabled' ? u.autoCashback : !u.autoCashback
   );
@@ -167,24 +193,81 @@ export default function AdminCashbackPage() {
       </motion.div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="stats-card bg-gradient-to-br from-blue-50 to-blue-100">
           <p className="text-sm text-blue-600 font-medium">Pending Cashbacks</p>
           <p className="text-3xl font-bold text-blue-900">{pendingCashbacks.length}</p>
-          <p className="text-xs text-blue-600 mt-1">₹{pendingCashbacks.reduce((sum, c) => sum + c.cashbackAmount, 0).toFixed(2)}</p>
+          <p className="text-xs text-blue-600 mt-1">Spend: ₹{pendingCashbacks.reduce((sum, c) => sum + c.spendAmount, 0).toFixed(2)}</p>
+          <p className="text-xs text-blue-600">Cashback: ₹{pendingCashbacks.reduce((sum, c) => sum + c.cashbackAmount, 0).toFixed(2)}</p>
         </div>
         <div className="stats-card bg-gradient-to-br from-green-50 to-green-100">
-          <p className="text-sm text-green-600 font-medium">Processed Today</p>
-          <p className="text-3xl font-bold text-green-900">{processedCashbacks.filter(c => new Date(c.processedAt).toDateString() === new Date().toDateString()).length}</p>
+          <p className="text-sm text-green-600 font-medium">Processed (Filtered)</p>
+          <p className="text-3xl font-bold text-green-900">{processedCashbacks.length}</p>
+          <p className="text-xs text-green-600 mt-1">Spend: ₹{processedCashbacks.reduce((sum, c) => sum + c.spendAmount, 0).toFixed(2)}</p>
+          <p className="text-xs text-green-600">Cashback: ₹{processedCashbacks.reduce((sum, c) => sum + c.cashbackAmount, 0).toFixed(2)}</p>
         </div>
         <div className="stats-card bg-gradient-to-br from-purple-50 to-purple-100">
-          <p className="text-sm text-purple-600 font-medium">Total Users</p>
-          <p className="text-3xl font-bold text-purple-900">{users.length}</p>
+          <p className="text-sm text-purple-600 font-medium">Total (Filtered)</p>
+          <p className="text-3xl font-bold text-purple-900">{pendingCashbacks.length + processedCashbacks.length}</p>
+          <p className="text-xs text-purple-600 mt-1">Spend: ₹{([...pendingCashbacks, ...processedCashbacks].reduce((sum, c) => sum + c.spendAmount, 0)).toFixed(2)}</p>
+          <p className="text-xs text-purple-600">Cashback: ₹{([...pendingCashbacks, ...processedCashbacks].reduce((sum, c) => sum + c.cashbackAmount, 0)).toFixed(2)}</p>
         </div>
+      </div>
+
+      {/* Additional Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="stats-card bg-gradient-to-br from-orange-50 to-orange-100">
-          <p className="text-sm text-orange-600 font-medium">Auto Enabled</p>
-          <p className="text-3xl font-bold text-orange-900">{users.filter(u => u.autoCashback).length}</p>
+          <p className="text-sm text-orange-600 font-medium">Total Users</p>
+          <p className="text-3xl font-bold text-orange-900">{users.length}</p>
         </div>
+        <div className="stats-card bg-gradient-to-br from-pink-50 to-pink-100">
+          <p className="text-sm text-pink-600 font-medium">Auto Enabled</p>
+          <p className="text-3xl font-bold text-pink-900">{users.filter(u => u.autoCashback).length}</p>
+        </div>
+        <div className="stats-card bg-gradient-to-br from-indigo-50 to-indigo-100">
+          <p className="text-sm text-indigo-600 font-medium">Auto Disabled</p>
+          <p className="text-3xl font-bold text-indigo-900">{users.filter(u => !u.autoCashback).length}</p>
+        </div>
+      </div>
+
+      {/* Date Filter */}
+      <div className="stats-card">
+        <h2 className="text-xl font-semibold mb-4">Date Filter</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+            <input
+              type="date"
+              value={dateFilter.startDate}
+              onChange={(e) => setDateFilter({ ...dateFilter, startDate: e.target.value })}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+            <input
+              type="date"
+              value={dateFilter.endDate}
+              onChange={(e) => setDateFilter({ ...dateFilter, endDate: e.target.value })}
+              className="input-field"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => setDateFilter({ startDate: '', endDate: '' })}
+              className="btn-secondary w-full"
+            >
+              Clear Filter
+            </button>
+          </div>
+        </div>
+        {(dateFilter.startDate || dateFilter.endDate) && (
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              📅 Showing cashbacks from {dateFilter.startDate || 'beginning'} to {dateFilter.endDate || 'today'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* User Cashback Settings */}
@@ -290,8 +373,8 @@ export default function AdminCashbackPage() {
                 className="w-4 h-4"
               />
               <div className="flex-1">
-                <p className="font-medium">{cashback.userId?.name}</p>
-                <p className="text-sm text-gray-600">Spend: ₹{cashback.spendAmount} | Cashback: ₹{cashback.cashbackAmount} ({cashback.cashbackRate}%)</p>
+                <p className="font-medium">{cashback.userId?.name || 'Unknown User'}</p>
+                <p className="text-sm text-gray-600">Spend: ₹{Number(cashback.spendAmount).toFixed(2)} | Cashback: ₹{Number(cashback.cashbackAmount).toFixed(2)} ({cashback.cashbackRate}%)</p>
                 <p className="text-xs text-gray-500">{new Date(cashback.createdAt).toLocaleString()}</p>
               </div>
               <button onClick={() => handleProcessCashback(cashback._id)} className="btn-primary text-sm">
@@ -340,8 +423,8 @@ export default function AdminCashbackPage() {
                 className="w-4 h-4"
               />
               <div className="flex-1">
-                <p className="font-medium">{cashback.userId?.name}</p>
-                <p className="text-sm text-gray-600">Cashback: ₹{cashback.cashbackAmount} ({cashback.cashbackRate}%) - {cashback.type}</p>
+                <p className="font-medium">{cashback.userId?.name || 'Unknown User'}</p>
+                <p className="text-sm text-gray-600">Cashback: ₹{Number(cashback.cashbackAmount).toFixed(2)} ({cashback.cashbackRate}%) - {cashback.type}</p>
                 <p className="text-xs text-gray-500">Processed: {new Date(cashback.processedAt).toLocaleString()}</p>
               </div>
               <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Processed</span>
