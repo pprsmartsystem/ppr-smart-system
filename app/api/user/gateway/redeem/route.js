@@ -5,6 +5,7 @@ import connectDB from '@/lib/mongodb';
 import Card from '@/models/Card';
 import Transaction from '@/models/Transaction';
 import Settlement from '@/models/Settlement';
+import Cashback from '@/models/Cashback';
 import UserSettings from '@/models/UserSettings';
 
 export async function POST(request) {
@@ -51,6 +52,8 @@ export async function POST(request) {
     // Check if auto settlement is enabled for card owner (User B)
     const userSettings = await UserSettings.findOne({ userId: card.userId });
     const autoSettlement = userSettings?.autoSettlement !== false; // Default true
+    const autoCashback = userSettings?.autoCashback !== false; // Default true
+    const cashbackRate = userSettings?.cashbackRate || 4; // Default 4%
 
     if (autoSettlement) {
       // Calculate settlement: spend amount minus 1.77% deduction
@@ -67,6 +70,19 @@ export async function POST(request) {
         status: 'pending',
         type: 'auto',
         scheduledFor: getNextSettlementTime(), // 9:30 AM next day
+      });
+    }
+
+    // Create cashback record if auto-cashback is enabled
+    if (autoCashback) {
+      const cashbackAmount = (amount * cashbackRate) / 100;
+      await Cashback.create({
+        userId: card.userId, // Card owner gets the cashback
+        spendAmount: amount,
+        cashbackRate: cashbackRate,
+        cashbackAmount: cashbackAmount,
+        status: 'pending',
+        type: 'auto',
       });
     }
 
