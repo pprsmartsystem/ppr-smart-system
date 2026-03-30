@@ -18,7 +18,7 @@ export async function POST(request) {
     }
 
     await dbConnect();
-    const { distributorId, amount } = await request.json();
+    const { distributorId, amount, action, remark } = await request.json();
 
     // Get distributor
     const distributor = await User.findById(distributorId);
@@ -26,24 +26,47 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Distributor not found' }, { status: 404 });
     }
 
-    // Add balance to distributor wallet
-    distributor.walletBalance += amount;
-    await distributor.save();
+    if (action === 'deduct') {
+      // Deduct balance (allow negative)
+      distributor.walletBalance -= amount;
+      await distributor.save();
 
-    // Create transaction record
-    await Transaction.create({
-      userId: distributorId,
-      type: 'credit',
-      amount: amount,
-      status: 'completed',
-      description: 'Wallet recharged by admin',
-      reference: `ADMIN${Date.now()}`
-    });
+      // Create transaction record
+      await Transaction.create({
+        userId: distributorId,
+        type: 'debit',
+        amount: amount,
+        status: 'completed',
+        description: remark || 'Balance deducted by admin',
+        reference: `DEDUCT${Date.now()}`
+      });
 
-    return NextResponse.json({ 
-      success: true,
-      newBalance: distributor.walletBalance 
-    });
+      return NextResponse.json({ 
+        success: true,
+        message: 'Balance deducted successfully',
+        newBalance: distributor.walletBalance 
+      });
+    } else {
+      // Add balance to distributor wallet
+      distributor.walletBalance += amount;
+      await distributor.save();
+
+      // Create transaction record
+      await Transaction.create({
+        userId: distributorId,
+        type: 'credit',
+        amount: amount,
+        status: 'completed',
+        description: 'Wallet recharged by admin',
+        reference: `ADMIN${Date.now()}`
+      });
+
+      return NextResponse.json({ 
+        success: true,
+        message: 'Balance added successfully',
+        newBalance: distributor.walletBalance 
+      });
+    }
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
