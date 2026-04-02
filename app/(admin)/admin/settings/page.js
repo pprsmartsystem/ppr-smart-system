@@ -339,17 +339,18 @@ export default function SettingsPage() {
               </div>
               {newGateway.type === 'qr_code' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">QR Code URL</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload QR Code</label>
                   <input
-                    type="url"
-                    value={newGateway.qrCodeUrl}
-                    onChange={(e) => setNewGateway({ ...newGateway, qrCodeUrl: e.target.value })}
-                    placeholder="Paste Cloudinary URL here"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleQRUpload}
                     className="input-field"
-                    required
                   />
                   {newGateway.qrCodeUrl && (
-                    <img src={newGateway.qrCodeUrl} alt="QR" className="mt-2 w-32 h-32 object-contain border rounded" />
+                    <div className="mt-3">
+                      <img src={newGateway.qrCodeUrl} alt="QR" className="w-48 h-48 object-contain border rounded mx-auto" />
+                      <p className="text-xs text-green-600 text-center mt-2">✓ QR Code uploaded successfully</p>
+                    </div>
                   )}
                 </div>
               )}
