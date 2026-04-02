@@ -34,6 +34,9 @@ export default function AdminUsersPage() {
   const [showDeductModal, setShowDeductModal] = useState(false);
   const [deductAmount, setDeductAmount] = useState('');
   const [deductRemark, setDeductRemark] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [generatedPassword, setGeneratedPassword] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -230,6 +233,35 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/users/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser._id, newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setGeneratedPassword(data.newPassword);
+        toast.success('Password reset successfully!');
+      } else {
+        toast.error(data.error || 'Failed to reset password');
+      }
+    } catch (error) {
+      toast.error('Error resetting password');
+    }
+  };
+
+  const generateRandomPassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(password);
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesFilter = filter === 'all' || user.status === filter;
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -368,6 +400,20 @@ export default function AdminUsersPage() {
                       <button
                         onClick={() => {
                           setSelectedUser(user);
+                          setShowPasswordModal(true);
+                          setNewPassword('');
+                          setGeneratedPassword('');
+                        }}
+                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
+                        title="Reset Password"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedUser(user);
                           setShowBalanceModal(true);
                         }}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -457,6 +503,91 @@ export default function AdminUsersPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Reset Password Modal */}
+      {showPasswordModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold mb-2">Reset Password</h2>
+            <p className="text-gray-500 text-sm mb-6">Reset password for <strong>{selectedUser.name}</strong></p>
+            
+            {generatedPassword ? (
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                  <p className="text-sm text-green-800 mb-2">✓ Password reset successfully!</p>
+                  <p className="text-xs text-green-700 mb-3">Share this password with the user:</p>
+                  <div className="bg-white rounded-lg p-3 border border-green-300">
+                    <p className="font-mono text-lg font-bold text-gray-900 text-center">{generatedPassword}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedPassword);
+                      toast.success('Password copied to clipboard!');
+                    }}
+                    className="mt-3 w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                  >
+                    Copy Password
+                  </button>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-xs text-yellow-800">⚠️ Save this password now. It cannot be retrieved later.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setSelectedUser(null);
+                    setNewPassword('');
+                    setGeneratedPassword('');
+                  }}
+                  className="w-full btn-secondary"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                  <input
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password or generate one"
+                    className="input-field"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={generateRandomPassword}
+                    className="mt-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Generate Random Password
+                  </button>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs text-blue-800">💡 The password will be hashed and stored securely. Make sure to save it before closing.</p>
+                </div>
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordModal(false);
+                      setSelectedUser(null);
+                      setNewPassword('');
+                    }}
+                    className="flex-1 btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="flex-1 btn-primary">
+                    Reset Password
+                  </button>
+                </div>
+              </form>
+            )}
+          </motion.div>
+        </div>
+      )}
 
       {/* Deduct Balance Modal */}
       {showDeductModal && selectedUser && (
