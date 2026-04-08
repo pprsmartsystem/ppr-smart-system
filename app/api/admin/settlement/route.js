@@ -18,7 +18,7 @@ export async function GET() {
     }
 
     await connectDB();
-    const settlements = await Settlement.find().populate('userId', 'name email').sort({ createdAt: -1 });
+    const settlements = await Settlement.find({ type: 'auto', source: 'admin' }).populate('userId', 'name email').sort({ createdAt: -1 });
     return NextResponse.json({ settlements });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
@@ -113,6 +113,7 @@ export async function POST(request) {
         settlementRate,
         settlementAmount,
         type: 'manual',
+        source: 'admin',
         status: 'pending',
       });
 

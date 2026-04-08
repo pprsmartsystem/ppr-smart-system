@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { GiftIcon, PlusIcon, CheckIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { PageHeader, AdminModal } from '@/components/ui/AdminComponents';
 
 export default function AdminCashbackPage() {
   const [cashbacks, setCashbacks] = useState([]);
@@ -178,35 +178,26 @@ export default function AdminCashbackPage() {
   );
 
   return (
-    <div className="space-y-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Cashback Management</h1>
-            <p className="text-gray-600 mt-2">Advanced cashback control & processing</p>
-          </div>
-          <button onClick={() => setShowModal(true)} className="btn-primary">
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Manual Cashback
-          </button>
-        </div>
-      </motion.div>
+    <div className="space-y-5">
+      <PageHeader icon={GiftIcon} title="Cashback Management" subtitle="Advanced cashback control & processing" color="from-pink-500 to-rose-500"
+        action={<button onClick={() => setShowModal(true)} className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700"><PlusIcon className="w-4 h-4" />Manual Cashback</button>}
+      />
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="stats-card bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="bg-white rounded-2xl border border-blue-100 p-5">
           <p className="text-sm text-blue-600 font-medium">Pending Cashbacks</p>
           <p className="text-3xl font-bold text-blue-900">{pendingCashbacks.length}</p>
           <p className="text-xs text-blue-600 mt-1">Spend: ₹{pendingCashbacks.reduce((sum, c) => sum + c.spendAmount, 0).toFixed(2)}</p>
           <p className="text-xs text-blue-600">Cashback: ₹{pendingCashbacks.reduce((sum, c) => sum + c.cashbackAmount, 0).toFixed(2)}</p>
         </div>
-        <div className="stats-card bg-gradient-to-br from-green-50 to-green-100">
+        <div className="bg-white rounded-2xl border border-green-100 p-5">
           <p className="text-sm text-green-600 font-medium">Processed (Filtered)</p>
           <p className="text-3xl font-bold text-green-900">{processedCashbacks.length}</p>
           <p className="text-xs text-green-600 mt-1">Spend: ₹{processedCashbacks.reduce((sum, c) => sum + c.spendAmount, 0).toFixed(2)}</p>
           <p className="text-xs text-green-600">Cashback: ₹{processedCashbacks.reduce((sum, c) => sum + c.cashbackAmount, 0).toFixed(2)}</p>
         </div>
-        <div className="stats-card bg-gradient-to-br from-purple-50 to-purple-100">
+        <div className="bg-white rounded-2xl border border-purple-100 p-5">
           <p className="text-sm text-purple-600 font-medium">Total (Filtered)</p>
           <p className="text-3xl font-bold text-purple-900">{pendingCashbacks.length + processedCashbacks.length}</p>
           <p className="text-xs text-purple-600 mt-1">Spend: ₹{([...pendingCashbacks, ...processedCashbacks].reduce((sum, c) => sum + c.spendAmount, 0)).toFixed(2)}</p>
@@ -216,22 +207,22 @@ export default function AdminCashbackPage() {
 
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="stats-card bg-gradient-to-br from-orange-50 to-orange-100">
+        <div className="bg-white rounded-2xl border border-orange-100 p-5">
           <p className="text-sm text-orange-600 font-medium">Total Users</p>
           <p className="text-3xl font-bold text-orange-900">{users.length}</p>
         </div>
-        <div className="stats-card bg-gradient-to-br from-pink-50 to-pink-100">
+        <div className="bg-white rounded-2xl border border-pink-100 p-5">
           <p className="text-sm text-pink-600 font-medium">Auto Enabled</p>
           <p className="text-3xl font-bold text-pink-900">{users.filter(u => u.autoCashback).length}</p>
         </div>
-        <div className="stats-card bg-gradient-to-br from-indigo-50 to-indigo-100">
+        <div className="bg-white rounded-2xl border border-indigo-100 p-5">
           <p className="text-sm text-indigo-600 font-medium">Auto Disabled</p>
           <p className="text-3xl font-bold text-indigo-900">{users.filter(u => !u.autoCashback).length}</p>
         </div>
       </div>
 
       {/* Date Filter */}
-      <div className="stats-card">
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <h2 className="text-xl font-semibold mb-4">Date Filter</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -271,7 +262,7 @@ export default function AdminCashbackPage() {
       </div>
 
       {/* User Cashback Settings */}
-      <div className="stats-card">
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">User Cashback Settings</h2>
           <select value={filter} onChange={(e) => setFilter(e.target.value)} className="input-field w-48">
@@ -331,7 +322,7 @@ export default function AdminCashbackPage() {
       </div>
 
       {/* Pending Cashbacks */}
-      <div className="stats-card">
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Pending Cashbacks ({pendingCashbacks.length})</h2>
           <div className="flex space-x-2">
@@ -389,7 +380,7 @@ export default function AdminCashbackPage() {
       </div>
 
       {/* Processed Cashbacks */}
-      <div className="stats-card">
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Recent Processed ({processedCashbacks.length})</h2>
           {selectedProcessed.length > 0 && (
@@ -435,8 +426,8 @@ export default function AdminCashbackPage() {
 
       {/* Manual Cashback Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <h2 className="text-2xl font-bold mb-6">Manual Cashback</h2>
             <form onSubmit={handleManualCashback} className="space-y-4">
               <div>
@@ -484,37 +475,27 @@ export default function AdminCashbackPage() {
                 <button type="submit" className="flex-1 btn-primary">Process Cashback</button>
               </div>
             </form>
-          </motion.div>
+          </div>
         </div>
       )}
 
-      {/* Set Rate Modal */}
       {showRateModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-6">Set Cashback Rate</h2>
-            <p className="text-gray-600 mb-4">User: <strong>{selectedUser.name}</strong></p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Set Cashback Rate</h2>
+            <p className="text-sm text-gray-500 mb-4">User: <strong>{selectedUser.name}</strong></p>
             <form onSubmit={handleSetRate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cashback Rate (%)</label>
-                <input
-                  type="number"
-                  name="rate"
-                  defaultValue={selectedUser.cashbackRate}
-                  className="input-field"
-                  required
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-                <p className="text-xs text-gray-500 mt-1">Current rate: {selectedUser.cashbackRate}%</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Cashback Rate (%)</label>
+                <input type="number" name="rate" defaultValue={selectedUser.cashbackRate} className="input-field" required min="0" max="100" step="0.01" />
+                <p className="text-xs text-gray-400 mt-1">Current rate: {selectedUser.cashbackRate}%</p>
               </div>
-              <div className="flex space-x-3 pt-4">
+              <div className="flex gap-3">
                 <button type="button" onClick={() => { setShowRateModal(false); setSelectedUser(null); }} className="flex-1 btn-secondary">Cancel</button>
                 <button type="submit" className="flex-1 btn-primary">Update Rate</button>
               </div>
             </form>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>

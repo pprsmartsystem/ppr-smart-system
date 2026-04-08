@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { UserGroupIcon, PlusIcon, TrashIcon, WalletIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { formatCurrency } from '@/utils/cardUtils';
 import toast from 'react-hot-toast';
+import { PageHeader, StatusBadge, AdminModal, ActionBtn } from '@/components/ui/AdminComponents';
 
 export default function AdminDistributorsPage() {
   const [distributors, setDistributors] = useState([]);
@@ -175,106 +176,39 @@ export default function AdminDistributorsPage() {
     setNewDistributor({ ...newDistributor, password });
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-    </div>;
-  }
+  if (loading) return <div className="flex items-center justify-center min-h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>;
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Distributors</h1>
-          <p className="text-gray-600 mt-2">Manage distributor accounts and wallets</p>
-        </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-        >
-          <PlusIcon className="h-5 w-5" />
-          Create Distributor
-        </button>
-      </div>
+    <div className="space-y-5">
+      <PageHeader icon={UserGroupIcon} title="Distributors" subtitle="Manage distributor accounts and wallets" color="from-violet-500 to-purple-600"
+        action={<button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"><PlusIcon className="h-4 w-4" />Create Distributor</button>}
+      />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wallet Balance</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Users</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                {['Name','Email','Wallet Balance','Total Users','Status','Created','Actions'].map((h,i) => (
+                  <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i===6?'text-right':'text-left'}`}>{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-50">
               {distributors.map((dist) => (
-                <tr key={dist._id}>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{dist.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{dist.email}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                    {formatCurrency(dist.walletBalance || 0)}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{dist.userCount || 0}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      dist.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      dist.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      dist.status === 'blocked' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {dist.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(dist.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedDistributor(dist);
-                          fetchDistributorStats(dist._id);
-                          setShowStatsModal(true);
-                        }}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="View Stats"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedDistributor(dist);
-                          setShowWalletModal(true);
-                        }}
-                        className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                        title="Add Wallet Balance"
-                      >
-                        <WalletIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedDistributor(dist);
-                          setShowDeductModal(true);
-                        }}
-                        className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                        title="Deduct Balance"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteDistributor(dist._id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete Distributor"
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
+                <tr key={dist._id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">{dist.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{dist.email}</td>
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatCurrency(dist.walletBalance || 0)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{dist.userCount || 0}</td>
+                  <td className="px-4 py-3"><StatusBadge status={dist.status} /></td>
+                  <td className="px-4 py-3 text-xs text-gray-400">{new Date(dist.createdAt).toLocaleDateString('en-IN')}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1 justify-end">
+                      <ActionBtn icon={EyeIcon} onClick={() => { setSelectedDistributor(dist); fetchDistributorStats(dist._id); setShowStatsModal(true); }} color="text-blue-600 hover:bg-blue-50" title="View Stats" />
+                      <ActionBtn icon={WalletIcon} onClick={() => { setSelectedDistributor(dist); setShowWalletModal(true); }} color="text-green-600 hover:bg-green-50" title="Add Balance" />
+                      <ActionBtn icon={() => <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>} onClick={() => { setSelectedDistributor(dist); setShowDeductModal(true); }} color="text-orange-600 hover:bg-orange-50" title="Deduct Balance" />
+                      <ActionBtn icon={TrashIcon} onClick={() => handleDeleteDistributor(dist._id)} color="text-red-600 hover:bg-red-50" title="Delete" />
                     </div>
                   </td>
                 </tr>
@@ -282,26 +216,16 @@ export default function AdminDistributorsPage() {
             </tbody>
           </table>
         </div>
+        {distributors.length === 0 && <div className="text-center py-12 text-sm text-gray-400">No distributors found</div>}
       </div>
 
       {/* Distributor Stats Modal */}
       {showStatsModal && selectedDistributor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Distributor Statistics</h2>
-              <button
-                onClick={() => {
-                  setShowStatsModal(false);
-                  setSelectedDistributor(null);
-                  setDistributorStats(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-5">
+              <div><h2 className="text-lg font-bold text-gray-900">Distributor Statistics</h2><p className="text-xs text-gray-400">{selectedDistributor.name}</p></div>
+              <button onClick={() => { setShowStatsModal(false); setSelectedDistributor(null); setDistributorStats(null); }} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"><svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
 
             {loadingStats ? (
@@ -436,190 +360,51 @@ export default function AdminDistributorsPage() {
 
       {/* Create Distributor Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Create New Distributor</h2>
-            <form onSubmit={handleCreateDistributor} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={newDistributor.name}
-                  onChange={(e) => setNewDistributor({ ...newDistributor, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
+        <AdminModal title="Create Distributor" subtitle="New distributor account" onClose={() => setShowCreateModal(false)}>
+          <form onSubmit={handleCreateDistributor} className="space-y-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label><input type="text" value={newDistributor.name} onChange={(e) => setNewDistributor({ ...newDistributor, name: e.target.value })} className="input-field" required /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label><input type="email" value={newDistributor.email} onChange={(e) => setNewDistributor({ ...newDistributor, email: e.target.value })} className="input-field" required /></div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <div className="relative">
+                <input type={showPassword ? 'text' : 'password'} value={newDistributor.password} onChange={(e) => setNewDistributor({ ...newDistributor, password: e.target.value })} className="input-field pr-20" required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">{showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}</button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email ID</label>
-                <input
-                  type="email"
-                  value={newDistributor.email}
-                  onChange={(e) => setNewDistributor({ ...newDistributor, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={newDistributor.password}
-                    onChange={(e) => setNewDistributor({ ...newDistributor, password: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 pr-20"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={generatePassword}
-                  className="mt-2 text-sm text-indigo-600 hover:text-indigo-700"
-                >
-                  Generate Password
-                </button>
-              </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-xs text-yellow-800">
-                  <strong>Note:</strong> Save the password and share it with the distributor. It cannot be retrieved later.
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                >
-                  Create Distributor
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+              <button type="button" onClick={generatePassword} className="mt-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium">Generate Password</button>
+            </div>
+            <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs text-amber-800">Save the password and share it with the distributor. It cannot be retrieved later.</div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 btn-secondary">Cancel</button>
+              <button type="submit" className="flex-1 btn-primary">Create</button>
+            </div>
+          </form>
+        </AdminModal>
       )}
 
-      {/* Add Wallet Balance Modal */}
       {showWalletModal && selectedDistributor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Add Wallet Balance</h2>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-blue-800">
-                <strong>{selectedDistributor.name}</strong><br />
-                Current Balance: <strong>{formatCurrency(selectedDistributor.walletBalance || 0)}</strong>
-              </p>
+        <AdminModal title="Add Wallet Balance" subtitle={`${selectedDistributor.name} · Current: ${formatCurrency(selectedDistributor.walletBalance || 0)}`} onClose={() => { setShowWalletModal(false); setSelectedDistributor(null); setWalletAmount(''); }}>
+          <form onSubmit={handleAddWallet} className="space-y-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (₹)</label><input type="number" value={walletAmount} onChange={(e) => setWalletAmount(e.target.value)} className="input-field" min="1" required autoFocus /></div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => { setShowWalletModal(false); setSelectedDistributor(null); setWalletAmount(''); }} className="flex-1 btn-secondary">Cancel</button>
+              <button type="submit" className="flex-1 btn-primary">Add Balance</button>
             </div>
-            <form onSubmit={handleAddWallet} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
-                <input
-                  type="number"
-                  value={walletAmount}
-                  onChange={(e) => setWalletAmount(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  min="1"
-                  required
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                >
-                  Add Balance
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowWalletModal(false);
-                    setSelectedDistributor(null);
-                    setWalletAmount('');
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </AdminModal>
       )}
 
-      {/* Deduct Balance Modal */}
       {showDeductModal && selectedDistributor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">Deduct Wallet Balance</h2>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-orange-800">
-                <strong>{selectedDistributor.name}</strong><br />
-                Current Balance: <strong>{formatCurrency(selectedDistributor.walletBalance || 0)}</strong>
-              </p>
+        <AdminModal title="Deduct Balance" subtitle={`${selectedDistributor.name} · Current: ${formatCurrency(selectedDistributor.walletBalance || 0)}`} onClose={() => { setShowDeductModal(false); setSelectedDistributor(null); setDeductData({ amount: '', remark: '' }); }}>
+          <form onSubmit={handleDeductWallet} className="space-y-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (₹)</label><input type="number" value={deductData.amount} onChange={(e) => setDeductData({ ...deductData, amount: e.target.value })} className="input-field" min="1" step="0.01" required autoFocus /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Remark</label><textarea value={deductData.remark} onChange={(e) => setDeductData({ ...deductData, remark: e.target.value })} className="input-field" rows="3" placeholder="Reason for deduction..." required /></div>
+            <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs text-amber-800">Balance can go negative. Deduction will be recorded in transaction history.</div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => { setShowDeductModal(false); setSelectedDistributor(null); setDeductData({ amount: '', remark: '' }); }} className="flex-1 btn-secondary">Cancel</button>
+              <button type="submit" className="flex-1 py-3 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700">Deduct</button>
             </div>
-            <form onSubmit={handleDeductWallet} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
-                <input
-                  type="number"
-                  value={deductData.amount}
-                  onChange={(e) => setDeductData({ ...deductData, amount: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                  min="1"
-                  step="0.01"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Remark</label>
-                <textarea
-                  value={deductData.remark}
-                  onChange={(e) => setDeductData({ ...deductData, remark: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                  rows="3"
-                  placeholder="Reason for deduction..."
-                  required
-                />
-              </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-xs text-yellow-800">
-                  <strong>Note:</strong> Balance can go negative. Deduction will be recorded in transaction history.
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-                >
-                  Deduct Balance
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDeductModal(false);
-                    setSelectedDistributor(null);
-                    setDeductData({ amount: '', remark: '' });
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </AdminModal>
       )}
     </div>
   );

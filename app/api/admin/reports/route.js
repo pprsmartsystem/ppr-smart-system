@@ -33,43 +33,48 @@ export async function GET(request) {
 
     const users = await User.find(userFilter).select('_id name email role');
 
-    // Build date filter
+    // Build date filter with IST offset (+5:30)
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
     let dateFilter = {};
     if (startDate || endDate) {
       dateFilter.createdAt = {};
-      if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setTime(start.getTime() - IST_OFFSET); // IST midnight -> UTC
+        dateFilter.createdAt.$gte = start;
+      }
       if (endDate) {
         const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        end.setTime(end.getTime() - IST_OFFSET + (24 * 60 * 60 * 1000) - 1); // IST end of day -> UTC
         dateFilter.createdAt.$lte = end;
       }
     }
 
     const reports = await Promise.all(
       users.map(async (user) => {
-        // Get total redeem amount (debit transactions from gateway redemption)
-        const redeemTransactions = await Transaction.find({
-          userId: user._id,
-          type: 'debit',
-          description: { $regex: /redeem|gateway/i },
-          ...dateFilter
-        });
-        const totalRedeem = redeemTransactions.reduce((sum, t) => sum + t.amount, 0);
+        const baseFilter = { userId: user._id, ...dateFilter };
 
-        // Get settlement initiated amount (only user-initiated T+1 settlements)
-        const initiatedSettlements = await Transaction.find({
-          userId: user._id,
+        // Total redeem: debit transactions from gateway
+        const redeemTxns = await Transaction.find({
+          ...baseFilter,
           type: 'debit',
-          description: { $regex: /settlement initiated.*T\+1/i },
-          ...dateFilter
+          description: { $regex: 'redeem|gateway', $options: 'i' },
         });
-        const settlementInitiated = initiatedSettlements.reduce((sum, t) => sum + t.amount, 0);
+        const totalRedeem = redeemTxns.reduce((sum, t) => sum + t.amount, 0);
 
-        // Get pending settlements from Settlement model
+        // Settlement initiated: debit transactions T+1
+        const initiatedTxns = await Transaction.find({
+          ...baseFilter,
+          type: 'debit',
+          description: { $regex: 'settlement initiated', $options: 'i' },
+        });
+        const settlementInitiated = initiatedTxns.reduce((sum, t) => sum + t.amount, 0);
+
+        // Pending settlements from Settlement model
         const pendingSettlements = await Settlement.find({
           userId: user._id,
           status: 'pending',
-          ...dateFilter
+          ...dateFilter,
         });
         const pendingSettlement = pendingSettlements.reduce((sum, s) => sum + s.settlementAmount, 0);
 
@@ -80,13 +85,13 @@ export async function GET(request) {
           userRole: user.role,
           totalRedeem,
           settlementInitiated,
-          pendingSettlement
+          pendingSettlement,
         };
       })
     );
 
     // Filter out users with no activity
-    const activeReports = reports.filter(r => r.totalRedeem > 0 || r.settlementInitiated > 0);
+    const activeReports = reports.filter(r => r.totalRedeem > 0 || r.settlementInitiated > 0 || r.pendingSettlement > 0);
 
     return NextResponse.json({ reports: activeReports });
   } catch (error) {

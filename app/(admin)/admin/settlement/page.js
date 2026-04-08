@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { PlusIcon, TrashIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CheckIcon, ClockIcon, BoltIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 export default function AdminSettlementPage() {
@@ -12,6 +12,51 @@ export default function AdminSettlementPage() {
   const [manualSettlement, setManualSettlement] = useState({ userId: '', spendAmount: '' });
   const [selectedPending, setSelectedPending] = useState([]);
   const [selectedProcessed, setSelectedProcessed] = useState([]);
+  const [autoInfo, setAutoInfo] = useState(null);
+  const [autoRunning, setAutoRunning] = useState(false);
+
+  useEffect(() => { fetchSettlements(); fetchUsers(); fetchAutoInfo(); }, []);
+
+  // Poll auto info every 60s
+  useEffect(() => {
+    const t = setInterval(fetchAutoInfo, 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Auto-trigger at 10:30 AM IST client-side
+  useEffect(() => {
+    const checkTime = () => {
+      const now = new Date();
+      const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      if (ist.getHours() === 10 && ist.getMinutes() === 30 && ist.getSeconds() < 10) {
+        handleAutoSettle(true);
+      }
+    };
+    const t = setInterval(checkTime, 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  const fetchAutoInfo = async () => {
+    const res = await fetch('/api/admin/settlement/auto');
+    if (res.ok) setAutoInfo(await res.json());
+  };
+
+  const handleAutoSettle = async (silent = false) => {
+    if (autoRunning) return;
+    setAutoRunning(true);
+    try {
+      const res = await fetch('/api/admin/settlement/auto', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        if (!silent || data.count > 0) toast.success(data.message);
+        fetchSettlements();
+        fetchAutoInfo();
+      } else {
+        toast.error(data.error || 'Auto-settlement failed');
+      }
+    } catch { toast.error('Auto-settlement failed'); }
+    finally { setAutoRunning(false); }
+  };
 
   useEffect(() => { fetchSettlements(); fetchUsers(); }, []);
 
@@ -36,12 +81,12 @@ export default function AdminSettlementPage() {
         body: JSON.stringify({ action: 'process', settlementId }),
       });
       if (res.ok) { toast.success('Settlement processed!'); fetchSettlements(); }
+      else { const d = await res.json(); toast.error(d.error || 'Failed'); }
     } catch { toast.error('Failed to process'); }
   };
 
   const handleBulkProcess = async () => {
     if (!selectedPending.length) { toast.error('Select settlements first'); return; }
-    if (!confirm(`Process ${selectedPending.length} settlement(s)?`)) return;
     try {
       const res = await fetch('/api/admin/settlement', {
         method: 'POST',
@@ -59,7 +104,6 @@ export default function AdminSettlementPage() {
 
   const handleDelete = async (ids) => {
     const arr = Array.isArray(ids) ? ids : [ids];
-    if (!confirm(`Delete ${arr.length} settlement(s)? This will remove them permanently.`)) return;
     try {
       const res = await fetch('/api/admin/settlement', {
         method: 'DELETE',
@@ -68,22 +112,11 @@ export default function AdminSettlementPage() {
       });
       if (res.ok) {
         toast.success(`${arr.length} settlement(s) deleted`);
-        setSelectedPending(prev => prev.filter(id => !arr.includes(id)));
-        setSelectedProcessed(prev => prev.filter(id => !arr.includes(id)));
+        setSelectedPending(p => p.filter(id => !arr.includes(id)));
+        setSelectedProcessed(p => p.filter(id => !arr.includes(id)));
         fetchSettlements();
       }
     } catch { toast.error('Failed to delete'); }
-  };
-
-  const handleToggleAutoSettlement = async (userId, enabled) => {
-    try {
-      const res = await fetch('/api/admin/settlement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'toggle_auto', userId, enabled }),
-      });
-      if (res.ok) { toast.success(`Auto settlement ${enabled ? 'enabled' : 'paused'}`); fetchUsers(); }
-    } catch { toast.error('Failed to update'); }
   };
 
   const handleCreateSettlement = async (e) => {
@@ -107,81 +140,64 @@ export default function AdminSettlementPage() {
     } catch { toast.error('Failed to create'); }
   };
 
-  const togglePending = (id) => {
-    setSelectedPending(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
-  const toggleAllPending = () => {
-    setSelectedPending(selectedPending.length === pending.length ? [] : pending.map(s => s._id));
-  };
-
-  const toggleProcessed = (id) => {
-    setSelectedProcessed(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
-  const toggleAllProcessed = () => {
-    setSelectedProcessed(selectedProcessed.length === processed.length ? [] : processed.map(s => s._id));
-  };
+  const togglePending = (id) => setSelectedPending(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+  const toggleAllPending = () => setSelectedPending(selectedPending.length === pending.length ? [] : pending.map(s => s._id));
+  const toggleProcessed = (id) => setSelectedProcessed(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+  const toggleAllProcessed = () => setSelectedProcessed(selectedProcessed.length === processed.length ? [] : processed.map(s => s._id));
 
   return (
     <div className="space-y-8">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Settlement Management</h1>
-            <p className="text-gray-600 mt-2">Manage user settlements (1.77% deduction)</p>
+            <h1 className="text-3xl font-bold text-gray-900">Spend / Redeem Settlement</h1>
+            <p className="text-gray-500 mt-1">Auto-generated settlements when users spend or redeem via gateway (1.77% deduction)</p>
           </div>
-          <button onClick={() => setShowModal(true)} className="btn-primary">
-            <PlusIcon className="w-4 h-4 mr-2" /> Create Settlement
+          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
+            <PlusIcon className="w-4 h-4" /> Create Settlement
           </button>
         </div>
       </motion.div>
 
-      {/* Auto Settlement Controls */}
-      <div className="stats-card">
-        <h2 className="text-xl font-semibold mb-4">Auto Settlement Controls</h2>
-        <div className="space-y-3">
-          {users.map((user) => (
-            <div key={user._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <p className="font-medium">{user.name}</p>
-                <p className="text-sm text-gray-600">{user.email}</p>
-              </div>
-              <button
-                onClick={() => handleToggleAutoSettlement(user._id, !user.autoSettlement)}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  user.autoSettlement ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}
-              >
-                {user.autoSettlement ? 'Enabled' : 'Paused'}
-              </button>
-            </div>
-          ))}
+      {/* Auto-Settlement Banner */}
+      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="w-11 h-11 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+          <ClockIcon className="w-6 h-6 text-indigo-300" />
         </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            <p className="text-white font-semibold text-sm">Auto-Settlement Schedule</p>
+            <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-medium">Active</span>
+          </div>
+          <p className="text-indigo-300 text-xs">
+            Runs automatically every day at <span className="text-white font-bold">10:30 AM IST</span>
+            {autoInfo?.nextRunIST && <> · Next run: <span className="text-amber-300 font-medium">{autoInfo.nextRunIST}</span></>}
+            {autoInfo?.pendingCount > 0 && <> · <span className="text-yellow-300 font-medium">{autoInfo.pendingCount} pending</span></>}
+          </p>
+        </div>
+        <button
+          onClick={() => handleAutoSettle(false)}
+          disabled={autoRunning}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors flex-shrink-0"
+        >
+          {autoRunning
+            ? <><ArrowPathIcon className="w-4 h-4 animate-spin" /> Running...</>
+            : <><BoltIcon className="w-4 h-4" /> Run Now</>}
+        </button>
       </div>
 
-      {/* Pending Settlements */}
-      <div className="stats-card">
+      {/* Pending */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Pending Settlements ({pending.length})</h2>
           {pending.length > 0 && (
             <div className="flex gap-2">
-              <button
-                onClick={handleBulkProcess}
-                disabled={!selectedPending.length}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${
-                  selectedPending.length ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
+              <button onClick={handleBulkProcess} disabled={!selectedPending.length}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${selectedPending.length ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
                 <CheckIcon className="w-4 h-4" /> Settle Selected ({selectedPending.length})
               </button>
-              <button
-                onClick={() => handleDelete(selectedPending)}
-                disabled={!selectedPending.length}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${
-                  selectedPending.length ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
+              <button onClick={() => handleDelete(selectedPending)} disabled={!selectedPending.length}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${selectedPending.length ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
                 <TrashIcon className="w-4 h-4" /> Delete Selected ({selectedPending.length})
               </button>
             </div>
@@ -190,29 +206,21 @@ export default function AdminSettlementPage() {
 
         {pending.length > 0 ? (
           <div className="space-y-3">
-            {/* Select All */}
             <label className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 rounded-lg">
-              <input
-                type="checkbox"
-                checked={selectedPending.length === pending.length && pending.length > 0}
-                onChange={toggleAllPending}
-                className="w-4 h-4 text-indigo-600 rounded"
-              />
+              <input type="checkbox" checked={selectedPending.length === pending.length} onChange={toggleAllPending} className="w-4 h-4 text-indigo-600 rounded" />
               <span className="text-sm font-medium text-gray-700">Select All</span>
             </label>
-
             {pending.map((s) => (
-              <div key={s._id} className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <input
-                  type="checkbox"
-                  checked={selectedPending.includes(s._id)}
-                  onChange={() => togglePending(s._id)}
-                  className="w-4 h-4 text-indigo-600 rounded flex-shrink-0"
-                />
+              <div key={s._id} className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                <input type="checkbox" checked={selectedPending.includes(s._id)} onChange={() => togglePending(s._id)} className="w-4 h-4 text-indigo-600 rounded flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="font-medium">{s.userId?.name} <span className="text-xs text-gray-500">({s.userId?.email})</span></p>
-                  <p className="text-sm text-gray-600">Spend: ₹{s.spendAmount} · Deduction: ₹{(s.spendAmount * s.settlementRate / 100).toFixed(2)} · Settlement: ₹{s.settlementAmount}</p>
-                  <p className="text-xs text-gray-500">{new Date(s.createdAt).toLocaleString()}</p>
+                  <p className="font-semibold text-gray-900">{s.userId?.name} <span className="text-xs text-gray-500 font-normal">({s.userId?.email})</span></p>
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    Spend: <span className="font-medium">₹{s.spendAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    {' · '}Deduction: <span className="font-medium text-red-600">₹{(s.spendAmount * s.settlementRate / 100).toFixed(2)}</span>
+                    {' · '}Settlement: <span className="font-medium text-green-700">₹{s.settlementAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">{new Date(s.createdAt).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <button onClick={() => handleProcessSettlement(s._id)} className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Settle</button>
@@ -222,90 +230,71 @@ export default function AdminSettlementPage() {
             ))}
           </div>
         ) : (
-          <p className="text-center text-gray-400 py-6">No pending settlements</p>
+          <p className="text-center text-gray-400 py-8">No pending settlements</p>
         )}
       </div>
 
-      {/* Processed Settlements */}
-      <div className="stats-card">
+      {/* Processed */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Recent Settlements ({processed.length})</h2>
+          <h2 className="text-xl font-semibold">Processed Settlements ({processed.length})</h2>
           {processed.length > 0 && (
-            <button
-              onClick={() => handleDelete(selectedProcessed)}
-              disabled={!selectedProcessed.length}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${
-                selectedProcessed.length ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
+            <button onClick={() => handleDelete(selectedProcessed)} disabled={!selectedProcessed.length}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${selectedProcessed.length ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
               <TrashIcon className="w-4 h-4" /> Delete Selected ({selectedProcessed.length})
             </button>
           )}
         </div>
-
         {processed.length > 0 ? (
           <div className="space-y-3">
             <label className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 rounded-lg">
-              <input
-                type="checkbox"
-                checked={selectedProcessed.length === processed.length && processed.length > 0}
-                onChange={toggleAllProcessed}
-                className="w-4 h-4 text-indigo-600 rounded"
-              />
+              <input type="checkbox" checked={selectedProcessed.length === processed.length} onChange={toggleAllProcessed} className="w-4 h-4 text-indigo-600 rounded" />
               <span className="text-sm font-medium text-gray-700">Select All</span>
             </label>
-
             {processed.map((s) => (
-              <div key={s._id} className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <input
-                  type="checkbox"
-                  checked={selectedProcessed.includes(s._id)}
-                  onChange={() => toggleProcessed(s._id)}
-                  className="w-4 h-4 text-indigo-600 rounded flex-shrink-0"
-                />
+              <div key={s._id} className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                <input type="checkbox" checked={selectedProcessed.includes(s._id)} onChange={() => toggleProcessed(s._id)} className="w-4 h-4 text-indigo-600 rounded flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="font-medium">{s.userId?.name}</p>
-                  <p className="text-sm text-gray-600">Settlement: ₹{s.settlementAmount}</p>
-                  <p className="text-xs text-gray-500">Processed: {new Date(s.processedAt).toLocaleString()}</p>
+                  <p className="font-semibold text-gray-900">{s.userId?.name} <span className="text-xs text-gray-500 font-normal">({s.userId?.email})</span></p>
+                  <p className="text-sm text-gray-600 mt-0.5">Settlement: <span className="font-medium text-green-700">₹{s.settlementAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></p>
+                  <p className="text-xs text-gray-400 mt-0.5">Processed: {new Date(s.processedAt).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Processed</span>
+                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">Processed</span>
                   <button onClick={() => handleDelete(s._id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><TrashIcon className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-center text-gray-400 py-6">No processed settlements</p>
+          <p className="text-center text-gray-400 py-8">No processed settlements</p>
         )}
       </div>
 
-      {/* Create Settlement Modal */}
+      {/* Create Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <h2 className="text-2xl font-bold mb-6">Create Settlement</h2>
             <form onSubmit={handleCreateSettlement} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">User</label>
                 <select value={manualSettlement.userId} onChange={(e) => setManualSettlement({ ...manualSettlement, userId: e.target.value })} className="input-field" required>
                   <option value="">Select User</option>
-                  {users.map((user) => (
-                    <option key={user._id} value={user._id}>{user.name} ({user.email})</option>
-                  ))}
+                  {users.map((u) => <option key={u._id} value={u._id}>{u.name} ({u.email})</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Spend Amount (₹)</label>
                 <input type="number" value={manualSettlement.spendAmount} onChange={(e) => setManualSettlement({ ...manualSettlement, spendAmount: e.target.value })} className="input-field" required min="1" step="0.01" />
-                <p className="text-xs text-gray-500 mt-1">1.77% will be deducted (Settlement = Spend - 1.77%)</p>
+                <p className="text-xs text-gray-500 mt-1">1.77% will be deducted as settlement fee</p>
               </div>
-              <div className="flex space-x-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 btn-secondary">Cancel</button>
-                <button type="submit" className="flex-1 btn-primary">Create Settlement</button>
+                <button type="submit" className="flex-1 btn-primary">Create</button>
               </div>
             </form>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>

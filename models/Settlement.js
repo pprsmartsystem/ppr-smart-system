@@ -20,7 +20,7 @@ const settlementSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'processed', 'paused'],
+    enum: ['pending', 'processed', 'paused', 'rejected'],
     default: 'pending',
   },
   type: {
@@ -28,6 +28,12 @@ const settlementSchema = new mongoose.Schema({
     enum: ['auto', 'manual'],
     default: 'auto',
   },
+  source: {
+    type: String,
+    enum: ['admin', 'user'],
+    default: 'admin',
+  },
+  rejectionReason: { type: String },
   processedAt: Date,
   scheduledFor: Date,
 }, {

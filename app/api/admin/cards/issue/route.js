@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Card from '@/models/Card';
 import User from '@/models/User';
+import Transaction from '@/models/Transaction';
 
 function generateCardNumber() {
   const prefix = '4532';
@@ -37,23 +38,52 @@ export async function POST(request) {
     }
 
     const { userId, amount, spendingLimit } = await request.json();
-    
+    const cardAmount = parseFloat(amount) || 0;
+
     await connectDB();
     const user = await User.findById(userId);
     if (!user) return NextResponse.json({ message: 'User not found' }, { status: 404 });
+
+    if (cardAmount > 0 && user.walletBalance < cardAmount) {
+      return NextResponse.json({
+        message: `Insufficient wallet balance. User has ₹${user.walletBalance.toFixed(2)} but card requires ₹${cardAmount.toFixed(2)}`,
+      }, { status: 400 });
+    }
 
     const card = await Card.create({
       userId: userId,
       cardNumber: generateCardNumber(),
       expiryDate: calculateExpiryDate(),
       cvv: generateCVV(),
-      spendingLimit: spendingLimit || 5000,
-      balance: amount || 0,
+      spendingLimit: spendingLimit || cardAmount || 5000,
+      balance: cardAmount,
       status: 'active',
       cardName: `${user.name}'s Card`,
     });
 
-    return NextResponse.json({ message: 'Card issued successfully', card });
+    if (cardAmount > 0) {
+      user.walletBalance -= cardAmount;
+      await user.save();
+
+      await Transaction.create({
+        userId,
+        cardId: card._id,
+        type: 'debit',
+        amount: cardAmount,
+        status: 'completed',
+        description: `Card issued by admin - ₹${cardAmount} transferred to card`,
+        reference: `ADM-CARD-${Date.now()}`,
+        fromWallet: true,
+        balanceBefore: user.walletBalance + cardAmount,
+        balanceAfter: user.walletBalance,
+      });
+    }
+
+    return NextResponse.json({
+      message: 'Card issued successfully',
+      card,
+      walletBalance: user.walletBalance,
+    });
   } catch (error) {
     return NextResponse.json({ message: 'Server error' }, { status: 500 });
   }

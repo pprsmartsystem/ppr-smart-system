@@ -10,7 +10,11 @@ export const metadata = {
   description: 'A comprehensive digital gifting, corporate rewards, and virtual card management platform built for modern businesses.',
   keywords: 'digital gifting, corporate rewards, virtual cards, employee benefits, gift vouchers',
   authors: [{ name: 'PPR Smart System' }],
-  viewport: 'width=device-width, initial-scale=1',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
   themeColor: '#4F46E5',
 };
 

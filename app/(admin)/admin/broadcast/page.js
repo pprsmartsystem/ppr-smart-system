@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { MegaphoneIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { PageHeader, StatusBadge, AdminModal, ActionBtn } from '@/components/ui/AdminComponents';
 
 export default function BroadcastPage() {
   const [broadcasts, setBroadcasts] = useState([]);
@@ -76,99 +77,40 @@ export default function BroadcastPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Broadcast Messages</h1>
-          <p className="text-gray-600 mt-1">Manage announcement popup bar</p>
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-        >
-          <PlusIcon className="h-5 w-5" />
-          New Broadcast
-        </button>
-      </div>
+    <div className="space-y-5">
+      <PageHeader icon={MegaphoneIcon} title="Broadcast Messages" subtitle="Manage announcement popup bar" color="from-orange-500 to-amber-500"
+        action={<button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700"><PlusIcon className="h-4 w-4" />New Broadcast</button>}
+      />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {broadcasts.map((broadcast) => (
-                <tr key={broadcast._id}>
-                  <td className="px-6 py-4 text-sm text-gray-900 whitespace-pre-line max-w-md">
-                    {broadcast.message}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      broadcast.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {broadcast.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(broadcast.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleDelete(broadcast._id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
+            <thead><tr className="border-b border-gray-100 bg-gray-50/50">{['Message','Status','Created','Actions'].map((h,i) => <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i===3?'text-right':'text-left'}`}>{h}</th>)}</tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {broadcasts.map((b) => (
+                <tr key={b._id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-4 py-3 text-sm text-gray-800 max-w-md whitespace-pre-line">{b.message}</td>
+                  <td className="px-4 py-3"><StatusBadge status={b.isActive ? 'active' : 'inactive'} /></td>
+                  <td className="px-4 py-3 text-xs text-gray-400">{new Date(b.createdAt).toLocaleDateString('en-IN')}</td>
+                  <td className="px-4 py-3 text-right"><ActionBtn icon={TrashIcon} onClick={() => handleDelete(b._id)} color="text-red-500 hover:bg-red-50" title="Delete" /></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {broadcasts.length === 0 && <div className="text-center py-12 text-sm text-gray-400">No broadcasts yet</div>}
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <MegaphoneIcon className="h-6 w-6 text-indigo-600" />
-              <h2 className="text-xl font-bold">New Broadcast</h2>
+        <AdminModal title="New Broadcast" subtitle="Announce to all users" onClose={() => setShowModal(false)}>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Enter broadcast message..." className="input-field" rows="4" required />
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowModal(false)} className="flex-1 btn-secondary">Cancel</button>
+              <button type="submit" className="flex-1 btn-primary">Create</button>
             </div>
-            <form onSubmit={handleCreate}>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Enter broadcast message..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                rows="4"
-                required
-              />
-              <div className="flex gap-3 mt-4">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                >
-                  Create
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </AdminModal>
       )}
     </div>
   );

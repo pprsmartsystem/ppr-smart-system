@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { WalletIcon, PlusCircleIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { PageHeader, AdminModal } from '@/components/ui/AdminComponents';
 
 export default function AdminWalletPage() {
   const [users, setUsers] = useState([]);
@@ -67,60 +67,39 @@ export default function AdminWalletPage() {
   );
 
   return (
-    <div className="space-y-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold text-gray-900">Wallet Management</h1>
-        <p className="text-gray-600 mt-2">Add balance to user wallets</p>
-      </motion.div>
+    <div className="space-y-5">
+      <PageHeader icon={WalletIcon} title="Wallet Management" subtitle="Add balance to user wallets" color="from-emerald-500 to-green-600" />
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="stats-card">
-        <div className="mb-6">
-          <div className="relative">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
-            />
-          </div>
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <div className="relative">
+          <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input type="text" placeholder="Search users..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200" />
         </div>
+      </div>
 
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         {loading ? (
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded-xl animate-pulse"></div>
-            ))}
-          </div>
+          <div className="space-y-3 p-4">{[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}</div>
         ) : (
-          <div className="space-y-4">
+          <div className="divide-y divide-gray-50">
             {filteredUsers.map((user) => (
-              <div key={user._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                  <p className="text-sm text-gray-600">{user.email}</p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                    user.role === 'corporate' ? 'bg-purple-100 text-purple-800' :
-                    user.role === 'employee' ? 'bg-blue-100 text-blue-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {user.role}
-                  </span>
+              <div key={user._id} className="flex items-center justify-between p-4 hover:bg-gray-50/50 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                  <p className="text-xs text-gray-400">{user.email}</p>
+                  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                    user.role === 'admin' ? 'bg-red-50 text-red-700' :
+                    user.role === 'corporate' ? 'bg-purple-50 text-purple-700' :
+                    user.role === 'employee' ? 'bg-blue-50 text-blue-700' :
+                    'bg-green-50 text-green-700'
+                  }`}>{user.role}</span>
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">Wallet Balance</p>
-                    <p className="text-xl font-bold text-gray-900">₹{user.walletBalance?.toFixed(2) || '0.00'}</p>
+                    <p className="text-xs text-gray-400">Balance</p>
+                    <p className="text-lg font-bold text-gray-900">₹{user.walletBalance?.toFixed(2) || '0.00'}</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setShowModal(true);
-                    }}
-                    className="p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                  >
+                  <button onClick={() => { setSelectedUser(user); setShowModal(true); }} className="w-9 h-9 bg-indigo-600 text-white rounded-xl flex items-center justify-center hover:bg-indigo-700 transition-colors">
                     <PlusCircleIcon className="w-5 h-5" />
                   </button>
                 </div>
@@ -128,62 +107,26 @@ export default function AdminWalletPage() {
             ))}
           </div>
         )}
-      </motion.div>
+        {!loading && filteredUsers.length === 0 && <div className="text-center py-12 text-sm text-gray-400">No users found</div>}
+      </div>
 
       {showModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold mb-4">Add Wallet Balance</h2>
-            <p className="text-gray-600 mb-6">Add balance to <strong>{selectedUser.name}</strong>&apos;s wallet</p>
-            <form onSubmit={handleAddBalance} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Current Balance</label>
-                <div className="text-2xl font-bold text-gray-900">₹{selectedUser.walletBalance?.toFixed(2) || '0.00'}</div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Amount to Add</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Enter amount"
-                  min="1"
-                  step="0.01"
-                  required
-                  className="input-field"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
-                <select
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  required
-                  className="input-field"
-                >
-                  <option value="">Select reason</option>
-                  <option value="Card Loading Amount">Card Loading Amount</option>
-                  <option value="Settlement">Settlement</option>
-                  <option value="Commission">Commission</option>
-                  <option value="Bonus">Bonus</option>
-                  <option value="Refund">Refund</option>
-                  <option value="Cashback">Cashback</option>
-                  <option value="Reward">Reward</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button type="button" onClick={() => { setShowModal(false); setAmount(''); setReason(''); setSelectedUser(null); }} className="flex-1 btn-secondary">
-                  Cancel
-                </button>
-                <button type="submit" className="flex-1 btn-primary">
-                  Add Balance
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
+        <AdminModal title="Add Wallet Balance" subtitle={`To ${selectedUser.name}'s wallet · Current: ₹${selectedUser.walletBalance?.toFixed(2) || '0.00'}`} onClose={() => { setShowModal(false); setAmount(''); setReason(''); setSelectedUser(null); }}>
+          <form onSubmit={handleAddBalance} className="space-y-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Amount to Add</label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount" min="1" step="0.01" required className="input-field" autoFocus /></div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason</label>
+              <select value={reason} onChange={(e) => setReason(e.target.value)} required className="input-field">
+                <option value="">Select reason</option>
+                {['Card Loading Amount','Settlement','Commission','Bonus','Refund','Cashback','Reward','Other'].map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => { setShowModal(false); setAmount(''); setReason(''); setSelectedUser(null); }} className="flex-1 btn-secondary">Cancel</button>
+              <button type="submit" className="flex-1 btn-primary">Add Balance</button>
+            </div>
+          </form>
+        </AdminModal>
       )}
     </div>
   );

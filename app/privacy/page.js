@@ -1,117 +1,136 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import PublicLayout from '@/components/ui/PublicLayout';
+import { ShieldCheckIcon } from '@heroicons/react/24/outline';
+
+const fade = (d = 0) => ({ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { delay: d, duration: 0.4, ease: 'easeOut' } });
+
+const SECTIONS = [
+  {
+    title: 'Information We Collect',
+    content: 'We collect information that you provide directly to us when creating an account or using our services:',
+    list: ['Name, email address, and contact number', 'Account credentials (stored encrypted)', 'Payment and transaction information', 'KYC documents (Aadhaar, PAN, bank details)', 'Device and usage data'],
+  },
+  {
+    title: 'How We Use Your Information',
+    list: ['Process transactions and manage your account', 'Verify identity and prevent fraud', 'Provide customer support and respond to queries', 'Send important account notifications', 'Comply with legal and regulatory requirements', 'Improve our platform and services'],
+  },
+  {
+    title: 'Data Security',
+    content: 'We implement industry-standard security measures to protect your personal information, including 256-bit SSL encryption, JWT authentication with HTTP-only cookies, bcrypt password hashing, and regular security audits.',
+  },
+  {
+    title: 'KYC Data Handling',
+    content: 'KYC documents submitted for verification are stored securely and used solely for identity verification purposes. Documents are reviewed by authorised personnel only and are not shared with third parties except as required by law.',
+  },
+  {
+    title: 'Information Sharing',
+    content: 'We do not sell your personal information. We may share information with trusted service providers who assist in operating our platform, legal authorities when required by law, and corporate affiliates as necessary for business operations.',
+  },
+  {
+    title: 'Your Rights',
+    list: ['Access and review your personal data', 'Request correction of inaccurate information', 'Request deletion of your account and data', 'Opt-out of marketing communications', 'Export your transaction data in CSV format'],
+  },
+  {
+    title: 'Cookies & Tracking',
+    content: 'We use HTTP-only cookies for secure session management. We do not use third-party tracking cookies. You can control cookie settings through your browser, though disabling cookies may affect platform functionality.',
+  },
+  {
+    title: 'Data Retention',
+    content: 'We retain your personal data for as long as your account is active or as needed to provide services. Transaction records are retained for 7 years as required by Indian financial regulations.',
+  },
+  {
+    title: 'Contact for Privacy',
+    content: 'For privacy-related questions, data requests, or concerns, contact us at: contact@pprsmartsystem.com. We will respond within 30 days.',
+  },
+];
 
 export default function PrivacyPage() {
   const [pageData, setPageData] = useState(null);
 
   useEffect(() => {
-    fetch('/api/admin/pages?slug=privacy')
-      .then(res => res.json())
-      .then(data => setPageData(data.page));
+    fetch('/api/admin/pages?slug=privacy').then(r => r.json()).then(d => setPageData(d.page));
   }, []);
 
   if (pageData?.content) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
-        <nav className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <a href="/" className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Home
-            </a>
-          </div>
-        </nav>
+      <PublicLayout>
         <div className="max-w-4xl mx-auto px-4 py-16">
-          <h1 className="text-5xl font-bold text-gray-900 mb-8 text-center">{pageData.title}</h1>
-          <div className="bg-white rounded-2xl shadow-xl p-8" dangerouslySetInnerHTML={{ __html: pageData.content }} />
+          <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">{pageData.title}</h1>
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm prose max-w-none" dangerouslySetInnerHTML={{ __html: pageData.content }} />
         </div>
-      </div>
+      </PublicLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <a href="/" className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Home
-          </a>
-        </div>
-      </nav>
-
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <div className="inline-block p-3 bg-green-100 rounded-2xl mb-6">
-            <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+    <PublicLayout>
+      {/* Hero */}
+      <section className="relative overflow-hidden py-16 px-4 sm:px-6"
+        style={{ background: 'linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #065f46 100%)' }}>
+        <motion.div {...fade(0)} className="relative z-10 max-w-2xl mx-auto text-center">
+          <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mx-auto mb-5">
+            <ShieldCheckIcon className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-          <p className="text-gray-600">Last updated: March 2025</p>
-        </div>
+          <h1 className="text-4xl font-bold text-white mb-3">Privacy Policy</h1>
+          <p className="text-emerald-300 text-sm">Last updated: March 2025 · Your privacy is our priority</p>
+        </motion.div>
+      </section>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 space-y-8">
-          {[
-            { 
-              title: '1. Information We Collect', 
-              content: 'We collect information that you provide directly to us, including:',
-              list: ['Name and contact information', 'Account credentials', 'Payment and transaction information', 'KYC documents (Aadhaar, PAN, etc.)', 'Usage data and preferences']
-            },
-            { 
-              title: '2. How We Use Your Information',
-              list: ['Process transactions and manage accounts', 'Verify identity and prevent fraud', 'Provide customer support', 'Send important notifications', 'Improve our services']
-            },
-            { 
-              title: '3. Data Security', 
-              content: 'We implement industry-standard security measures including encryption, secure authentication, and regular security audits to protect your personal information.'
-            },
-            { 
-              title: '4. Information Sharing', 
-              content: 'We do not sell your personal information. We may share information with service providers, legal authorities when required, and corporate affiliates as necessary for business operations.'
-            },
-            { 
-              title: '5. Your Rights',
-              list: ['Access your personal data', 'Request data correction or deletion', 'Opt-out of marketing communications', 'Export your data']
-            },
-            { 
-              title: '6. Cookies', 
-              content: 'We use cookies and similar technologies to maintain sessions, analyze usage, and improve user experience.'
-            },
-            { 
-              title: '7. Contact Us', 
-              content: 'For privacy-related questions, contact us at: privacy@pprsmart.com'
-            },
-          ].map((section, i) => (
-            <section key={i} className="border-l-4 border-green-500 pl-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">{section.title}</h2>
-              {section.content && <p className="text-gray-700 leading-relaxed mb-3">{section.content}</p>}
-              {section.list && (
-                <ul className="list-disc list-inside text-gray-700 space-y-2">
-                  {section.list.map((item, j) => <li key={j}>{item}</li>)}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
+        {/* Summary banner */}
+        <motion.div {...fade(0.05)} className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 mb-10 flex items-start gap-3">
+          <ShieldCheckIcon className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-emerald-700 leading-relaxed">
+            We are committed to protecting your personal information. This policy explains what data we collect, how we use it, and your rights regarding your information.
+          </p>
+        </motion.div>
+
+        <div className="space-y-6">
+          {SECTIONS.map(({ title, content, list }, i) => (
+            <motion.div key={title} {...fade(i * 0.04)}
+              className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-black flex items-center justify-center flex-shrink-0">
+                  {i + 1}
+                </span>
+                {title}
+              </h2>
+              {content && <p className="text-gray-500 text-sm leading-relaxed">{content}</p>}
+              {list && (
+                <ul className="space-y-2 mt-2">
+                  {list.map(item => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-gray-500">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 mt-1.5" />
+                      {item}
+                    </li>
+                  ))}
                 </ul>
               )}
-            </section>
+            </motion.div>
           ))}
-
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 text-white mt-8">
-            <div className="flex items-center space-x-3">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <div>
-                <div className="font-bold text-lg">Your Privacy Matters</div>
-                <div className="text-sm text-white/90">We are committed to protecting your personal information</div>
-              </div>
-            </div>
-          </div>
         </div>
+
+        {/* Security badge */}
+        <motion.div {...fade(0.3)} className="mt-10 bg-gradient-to-r from-emerald-600 to-green-600 rounded-2xl p-6 flex items-center gap-4 text-white">
+          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+            <ShieldCheckIcon className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <p className="font-bold">Your Privacy is Protected</p>
+            <p className="text-emerald-100 text-sm mt-0.5">We use 256-bit SSL encryption and never sell your personal data to third parties.</p>
+          </div>
+        </motion.div>
+
+        <motion.div {...fade(0.35)} className="mt-6 bg-gray-900 rounded-2xl p-6 text-center text-white">
+          <p className="text-sm text-gray-300 mb-3">Have privacy concerns or data requests?</p>
+          <a href="/contact" className="inline-block text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors">
+            Contact our privacy team →
+          </a>
+        </motion.div>
       </div>
-    </div>
+    </PublicLayout>
   );
 }

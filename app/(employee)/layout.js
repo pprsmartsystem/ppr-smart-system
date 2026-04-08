@@ -1,64 +1,22 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
-import toast from 'react-hot-toast';
-
 export default function EmployeeLayout({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/me');
-        if (response.ok) {
-          const userData = await response.json();
-          if (userData.role !== 'employee') {
-            toast.error('Access denied');
-            router.push('/login');
-            return;
-          }
-          setUser(userData);
-        } else {
-          router.push('/login');
-        }
-      } catch (error) {
-        router.push('/login');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null)
+      .then(d => { if (!d || d.role !== 'employee') { router.push('/login'); return; } setUser(d); })
+      .catch(() => router.push('/login')).finally(() => setLoading(false));
   }, [router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>;
+  if (!user) return null;
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar 
-        userRole={user.role}
-        userName={user.name}
-        userEmail={user.email}
-      />
-      <main className="flex-1 overflow-auto">
-        <div className="p-6 lg:p-8 lg:ml-0 ml-16">
-          {children}
-        </div>
-      </main>
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <Sidebar userRole={user.role} userName={user.name} userEmail={user.email} />
+      <main className="flex-1 overflow-y-auto"><div className="p-4 lg:p-8">{children}</div></main>
     </div>
   );
 }

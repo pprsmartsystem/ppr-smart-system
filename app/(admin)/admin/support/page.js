@@ -127,7 +127,7 @@ export default function AdminSupportPage() {
   });
 
   return (
-    <div className="flex h-[calc(100vh-80px)] gap-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="flex h-[calc(100dvh-9rem)] gap-0 bg-white rounded-2xl border border-gray-100 overflow-hidden">
 
       {/* LEFT PANEL — Ticket List */}
       <div className="w-80 flex-shrink-0 border-r border-gray-200 flex flex-col">

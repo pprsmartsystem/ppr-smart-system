@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { CreditCardIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { PageHeader, StatusBadge, AdminModal } from '@/components/ui/AdminComponents';
 
 export default function AdminCardsPage() {
   const [users, setUsers] = useState([]);
@@ -80,102 +80,42 @@ export default function AdminCardsPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Cards Management</h1>
-          <p className="text-gray-600 mt-2">Issue cards to users and corporates</p>
-        </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary">
-          <PlusIcon className="w-4 h-4 mr-2" />
-          Issue Card
-        </button>
-      </motion.div>
+    <div className="space-y-5">
+      <PageHeader icon={CreditCardIcon} title="Cards Management" subtitle="Issue and manage virtual cards" color="from-purple-500 to-violet-600"
+        action={<button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700"><PlusIcon className="w-4 h-4" />Issue Card</button>}
+      />
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold mb-6">Issue New Card</h2>
-            <form onSubmit={handleIssueCard} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select User</label>
-                <select value={formData.userId} onChange={(e) => setFormData({...formData, userId: e.target.value})} required className="input-field">
-                  <option value="">Choose user...</option>
-                  {users.map(user => (
-                    <option key={user._id} value={user._id}>{user.name} ({user.email})</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Initial Balance</label>
-                <input type="number" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} placeholder="0.00" min="0" step="0.01" required className="input-field" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Spending Limit</label>
-                <input type="number" value={formData.spendingLimit} onChange={(e) => setFormData({...formData, spendingLimit: e.target.value})} placeholder="5000" min="100" step="100" required className="input-field" />
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 btn-secondary">Cancel</button>
-                <button type="submit" className="flex-1 btn-primary">Issue Card</button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
+        <AdminModal title="Issue New Card" onClose={() => setShowModal(false)}>
+          <form onSubmit={handleIssueCard} className="space-y-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Select User</label><select value={formData.userId} onChange={(e) => setFormData({...formData, userId: e.target.value})} required className="input-field"><option value="">Choose user...</option>{users.map(user => <option key={user._id} value={user._id}>{user.name} ({user.email})</option>)}</select></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Initial Balance</label><input type="number" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} placeholder="0.00" min="0" step="0.01" required className="input-field" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Spending Limit</label><input type="number" value={formData.spendingLimit} onChange={(e) => setFormData({...formData, spendingLimit: e.target.value})} placeholder="5000" min="100" step="100" required className="input-field" /></div>
+            <div className="flex gap-3"><button type="button" onClick={() => setShowModal(false)} className="flex-1 btn-secondary">Cancel</button><button type="submit" className="flex-1 btn-primary">Issue Card</button></div>
+          </form>
+        </AdminModal>
       )}
 
-      <div className="stats-card">
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         {cards.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-4 px-4 font-semibold text-gray-900">Card Number</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-900">User</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-900">Balance</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-900">Status</th>
-                  <th className="text-right py-4 px-4 font-semibold text-gray-900">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+              <thead><tr className="border-b border-gray-100 bg-gray-50/50">{['Card Number','User','Balance','Status','Actions'].map((h,i) => <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i===4?'text-right':'text-left'}`}>{h}</th>)}</tr></thead>
+              <tbody className="divide-y divide-gray-50">
                 {cards.map((card) => (
-                  <tr key={card._id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-4 px-4 font-mono">
-                      •••• •••• •••• {card.cardNumber.slice(-4)}
-                    </td>
-                    <td className="py-4 px-4">
-                      {card.userId?.name || 'Unknown'}
-                    </td>
-                    <td className="py-4 px-4">
-                      ₹{card.balance?.toFixed(2)}
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        card.status === 'active' ? 'bg-green-100 text-green-800' :
-                        card.status === 'frozen' ? 'bg-blue-100 text-blue-800' :
-                        'bg-red-100 text-red-800'
-                      } capitalize`}>
-                        {card.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-right">
-                      <button
-                        onClick={() => handleDeleteCard(card._id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete Card"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                    </td>
+                  <tr key={card._id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="py-3 px-4 font-mono text-sm">•••• •••• •••• {card.cardNumber.slice(-4)}</td>
+                    <td className="py-3 px-4 text-sm text-gray-700">{card.userId?.name || 'Unknown'}</td>
+                    <td className="py-3 px-4 text-sm font-semibold text-gray-900">₹{card.balance?.toFixed(2)}</td>
+                    <td className="py-3 px-4"><StatusBadge status={card.status} /></td>
+                    <td className="py-3 px-4 text-right"><button onClick={() => handleDeleteCard(card._id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><TrashIcon className="w-4 h-4" /></button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="text-center py-12">
-            <CreditCardIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No cards issued yet</p>
-          </div>
+          <div className="text-center py-12"><CreditCardIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" /><p className="text-sm text-gray-400">No cards issued yet</p></div>
         )}
       </div>
     </div>

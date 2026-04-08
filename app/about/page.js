@@ -1,135 +1,111 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import PublicLayout from '@/components/ui/PublicLayout';
+import { BoltIcon, ShieldCheckIcon, ChartBarIcon, UserGroupIcon, CreditCardIcon, GiftIcon } from '@heroicons/react/24/outline';
+
+const fade = (d = 0) => ({ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { delay: d, duration: 0.4, ease: 'easeOut' } });
 
 export default function AboutPage() {
   const [pageData, setPageData] = useState(null);
 
   useEffect(() => {
-    fetch('/api/admin/pages?slug=about')
-      .then(res => res.json())
-      .then(data => setPageData(data.page));
+    fetch('/api/admin/pages?slug=about').then(r => r.json()).then(d => setPageData(d.page));
   }, []);
 
   if (pageData?.content) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        <nav className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <a href="/" className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Home
-            </a>
-          </div>
-        </nav>
-        <div className="max-w-6xl mx-auto px-4 py-16">
-          <h1 className="text-5xl font-bold text-gray-900 mb-8 text-center">{pageData.title}</h1>
-          <div className="bg-white rounded-2xl shadow-xl p-8" dangerouslySetInnerHTML={{ __html: pageData.content }} />
+      <PublicLayout>
+        <div className="max-w-4xl mx-auto px-4 py-16">
+          <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">{pageData.title}</h1>
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm prose max-w-none" dangerouslySetInnerHTML={{ __html: pageData.content }} />
         </div>
-      </div>
+      </PublicLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      {/* Header */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <a href="/" className="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Home
-          </a>
-        </div>
-      </nav>
+    <PublicLayout>
+      {/* Hero */}
+      <section className="relative overflow-hidden py-20 px-4 sm:px-6"
+        style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1d4ed8 100%)' }}>
+        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, #818cf8, transparent)' }} />
+        <motion.div {...fade(0)} className="relative z-10 max-w-3xl mx-auto text-center">
+          <span className="inline-block text-xs font-bold text-indigo-300 uppercase tracking-widest mb-4">About Us</span>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-5">Transforming Corporate Rewards in India</h1>
+          <p className="text-indigo-200 text-lg leading-relaxed">
+            PPR Smart System is a comprehensive digital gifting, corporate rewards, and virtual card management platform built for modern Indian businesses.
+          </p>
+        </motion.div>
+      </section>
 
-      <div className="max-w-6xl mx-auto px-4 py-16">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="inline-block p-3 bg-indigo-100 rounded-2xl mb-6">
-            <svg className="w-12 h-12 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 space-y-16">
+
+        {/* Who we are + Mission */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {[
+            {
+              icon: BoltIcon, color: 'from-indigo-500 to-purple-600',
+              title: 'Who We Are',
+              text: 'PPR Smart System is a fintech platform providing innovative solutions for employee benefits, virtual card management, gift vouchers, and seamless financial settlements. We serve corporates, distributors, and individual users across India.',
+            },
+            {
+              icon: ShieldCheckIcon, color: 'from-emerald-500 to-green-600',
+              title: 'Our Mission',
+              text: 'To revolutionize the way businesses manage rewards, gifting, and employee benefits through cutting-edge technology and user-friendly solutions that drive engagement, satisfaction, and financial efficiency.',
+            },
+          ].map(({ icon: Icon, color, title, text }, i) => (
+            <motion.div key={title} {...fade(i * 0.1)} className="bg-white rounded-2xl border border-gray-100 p-7 shadow-sm hover:shadow-md transition-shadow">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mb-5 shadow-sm`}>
+                <Icon className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">{title}</h2>
+              <p className="text-gray-500 leading-relaxed text-sm">{text}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* What we offer */}
+        <motion.div {...fade(0.1)}>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900">What We Offer</h2>
+            <p className="text-gray-500 mt-2">End-to-end solutions for digital rewards and payments</p>
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">About Us</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">Transforming the way businesses manage rewards and employee benefits</p>
-        </div>
-
-        {/* Image Banner */}
-        <div className="mb-16 rounded-3xl overflow-hidden shadow-2xl">
-          <img 
-            src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=400&fit=crop" 
-            alt="Team collaboration" 
-            className="w-full h-80 object-cover"
-          />
-        </div>
-
-        {/* Content Grid */}
-        <div className="grid md:grid-cols-2 gap-8 mb-16">
-          <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
-            <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-6">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Who We Are</h2>
-            <p className="text-gray-700 leading-relaxed">
-              PPR Smart System is a comprehensive digital gifting, corporate rewards, and virtual card management platform built for modern businesses. We provide innovative solutions for employee benefits, gift vouchers, and seamless financial transactions.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-6">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Mission</h2>
-            <p className="text-gray-700 leading-relaxed">
-              To revolutionize the way businesses manage rewards, gifting, and employee benefits through cutting-edge technology and user-friendly solutions that drive engagement and satisfaction.
-            </p>
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-12 text-white mb-16">
-          <h2 className="text-3xl font-bold mb-8 text-center">What We Offer</h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { icon: '💳', title: 'Virtual Card Management', desc: 'Secure digital cards with spending controls' },
-              { icon: '🎁', title: 'Digital Gifting Platform', desc: 'Personalized rewards and vouchers' },
-              { icon: '🏢', title: 'Corporate Rewards', desc: 'Employee benefits made simple' },
-              { icon: '👥', title: 'Employee Management', desc: 'Streamlined onboarding and tracking' },
-              { icon: '🔒', title: 'Secure Processing', desc: 'Bank-grade security standards' },
-              { icon: '📊', title: 'Analytics Dashboard', desc: 'Real-time insights and reports' },
-            ].map((item, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/20 transition-all">
-                <div className="text-4xl mb-3">{item.icon}</div>
-                <h3 className="font-semibold mb-2">{item.title}</h3>
-                <p className="text-sm text-white/80">{item.desc}</p>
+              { icon: CreditCardIcon, title: 'Virtual Cards', desc: 'Secure digital cards with spending controls', color: 'from-blue-500 to-cyan-500' },
+              { icon: GiftIcon, title: 'Digital Gifting', desc: 'Personalised rewards and vouchers', color: 'from-pink-500 to-rose-500' },
+              { icon: UserGroupIcon, title: 'Corporate Rewards', desc: 'Employee benefits made simple', color: 'from-violet-500 to-purple-600' },
+              { icon: ShieldCheckIcon, title: 'KYC Verification', desc: 'Secure identity verification', color: 'from-emerald-500 to-green-600' },
+              { icon: ChartBarIcon, title: 'Analytics', desc: 'Real-time insights and reports', color: 'from-orange-500 to-amber-500' },
+              { icon: BoltIcon, title: 'T+1 Settlement', desc: 'Next-day bank settlements', color: 'from-indigo-500 to-blue-600' },
+            ].map(({ icon: Icon, title, desc, color }, i) => (
+              <motion.div key={title} {...fade(i * 0.06)} className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all group">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mb-3 shadow-sm group-hover:scale-105 transition-transform`}>
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <p className="font-bold text-gray-900 text-sm">{title}</p>
+                <p className="text-gray-400 text-xs mt-0.5">{desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div {...fade(0.15)}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[['10K+', 'Active Users'], ['500+', 'Corporate Clients'], ['₹50Cr+', 'Transactions'], ['99.9%', 'Uptime SLA']].map(([val, label], i) => (
+              <div key={label} className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-6 text-center text-white">
+                <p className="text-3xl font-bold mb-1">{val}</p>
+                <p className="text-indigo-200 text-sm">{label}</p>
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-          {[
-            { num: '10K+', label: 'Active Users' },
-            { num: '500+', label: 'Companies' },
-            { num: '₹50Cr+', label: 'Transactions' },
-            { num: '99.9%', label: 'Uptime' },
-          ].map((stat, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-shadow">
-              <div className="text-3xl font-bold text-indigo-600 mb-2">{stat.num}</div>
-              <div className="text-gray-600">{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
-    </div>
+    </PublicLayout>
   );
 }

@@ -3,18 +3,28 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import StatsCard from '@/components/ui/StatsCard';
-import VirtualCard from '@/components/cards/VirtualCard';
 import {
   WalletIcon,
   CreditCardIcon,
   GiftIcon,
   DocumentChartBarIcon,
-  PlusIcon,
-  ArrowUpIcon,
   ClockIcon,
+  ArrowUpRightIcon,
+  ArrowDownLeftIcon,
+  ShieldCheckIcon,
+  BanknotesIcon,
+  SparklesIcon,
+  ChevronRightIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from '@heroicons/react/24/outline';
 import { formatCurrency } from '@/utils/cardUtils';
+
+const fade = (delay = 0) => ({
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { delay, duration: 0.4, ease: 'easeOut' },
+});
 
 export default function UserDashboard() {
   const [user, setUser] = useState(null);
@@ -22,239 +32,257 @@ export default function UserDashboard() {
   const [transactions, setTransactions] = useState([]);
   const [pendingSettlement, setPendingSettlement] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [hideBalance, setHideBalance] = useState(false);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  useEffect(() => { fetchDashboardData(); }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const userRes = await fetch('/api/auth/me');
-      
-      if (!userRes.ok) {
-        // Not authenticated, redirect to login
-        window.location.href = '/login';
-        return;
-      }
-      
-      const userData = await userRes.json();
-      setUser(userData);
-      
-      const [cardsRes, transactionsRes, settlementRes] = await Promise.all([
+      const [userRes, cardsRes, txRes, settlementRes] = await Promise.all([
+        fetch('/api/auth/me'),
         fetch('/api/user/cards'),
-        fetch('/api/user/transactions?limit=5'),
+        fetch('/api/user/transactions?limit=6'),
         fetch('/api/user/settlement'),
       ]);
 
-      if (cardsRes.ok) {
-        const cardsData = await cardsRes.json();
-        setCards(cardsData.cards || []);
-      }
-
-      if (transactionsRes.ok) {
-        const transactionsData = await transactionsRes.json();
-        setTransactions(transactionsData.transactions || []);
-      }
-
-      if (settlementRes.ok) {
-        const settlementData = await settlementRes.json();
-        setPendingSettlement(settlementData.totalPending || 0);
-      }
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-      window.location.href = '/login';
+      if (!userRes.ok) return;
+      const userData = await userRes.json();
+      setUser(userData);
+      if (cardsRes.ok) setCards((await cardsRes.json()).cards || []);
+      if (txRes.ok) setTransactions((await txRes.json()).transactions || []);
+      if (settlementRes.ok) setPendingSettlement((await settlementRes.json()).totalPending || 0);
+    } catch {
+      // silently fail — layout already handles auth
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded-2xl"></div>
-            ))}
-          </div>
-        </div>
+  if (loading) return (
+    <div className="space-y-6 animate-pulse">
+      <div className="h-48 bg-gray-200 rounded-3xl" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-gray-200 rounded-2xl" />)}
       </div>
-    );
-  }
+    </div>
+  );
 
-  const totalCardBalance = cards.reduce((sum, card) => sum + card.balance, 0);
-  const activeCards = cards.filter(card => card.status === 'active').length;
+  const totalCardBalance = cards.reduce((s, c) => s + c.balance, 0);
+  const activeCards = cards.filter(c => c.status === 'active').length;
+  const totalIn = transactions.filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
+  const totalOut = transactions.filter(t => t.type !== 'credit').reduce((s, t) => s + t.amount, 0);
+
+  const mask = (val) => hideBalance ? '₹ ••••••' : val;
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.name?.split(' ')[0]}! 👋
-          </h1>
-          <p className="text-gray-600 mt-2">Manage your wallet, cards, and rewards</p>
-        </div>
-        <div className="mt-4 sm:mt-0">
-          <Link href="/user/cards" className="btn-primary">
-            <CreditCardIcon className="w-4 h-4 mr-2" />
-            New Card
-          </Link>
-        </div>
-      </motion.div>
+    <div className="space-y-6 pb-8">
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          title="Wallet Balance"
-          value={formatCurrency(user?.walletBalance || 0)}
-          icon={WalletIcon}
-          trend="up"
-          trendValue="+5%"
-          color="green"
-          delay={0}
-        />
-        <StatsCard
-          title="Active Cards"
-          value={activeCards.toString()}
-          icon={CreditCardIcon}
-          color="blue"
-          delay={0.1}
-        />
-        <StatsCard
-          title="Card Balance"
-          value={formatCurrency(totalCardBalance)}
-          icon={ArrowUpIcon}
-          color="purple"
-          delay={0.2}
-        />
-        <StatsCard
-          title="Pending Settlement"
-          value={formatCurrency(pendingSettlement)}
-          icon={ClockIcon}
-          color="orange"
-          delay={0.3}
-          subtitle="Next day to wallet"
-        />
-      </div>
+      {/* ── Hero Balance Card ─────────────────────────────────── */}
+      <motion.div {...fade(0)}>
+        <div className="relative overflow-hidden rounded-3xl p-7 text-white"
+          style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1d4ed8 100%)' }}>
+          {/* Decorative blobs */}
+          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #818cf8, transparent)' }} />
+          <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #60a5fa, transparent)' }} />
 
-      {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="stats-card"
-      >
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Link
-            href="/user/vouchers"
-            className="p-4 bg-gradient-to-r from-purple-500 to-violet-500 rounded-xl text-white hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-          >
-            <GiftIcon className="w-8 h-8 mb-2" />
-            <h4 className="font-semibold">Buy Vouchers</h4>
-            <p className="text-sm opacity-90">Gift cards & rewards</p>
-          </Link>
-          <Link
-            href="/user/cards"
-            className="p-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl text-white hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-          >
-            <CreditCardIcon className="w-8 h-8 mb-2" />
-            <h4 className="font-semibold">Manage Cards</h4>
-            <p className="text-sm opacity-90">View & control cards</p>
-          </Link>
-          <Link
-            href="/user/transactions"
-            className="p-4 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl text-white hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-          >
-            <DocumentChartBarIcon className="w-8 h-8 mb-2" />
-            <h4 className="font-semibold">Transactions</h4>
-            <p className="text-sm opacity-90">View transaction history</p>
-          </Link>
+          <div className="relative z-10">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <p className="text-indigo-200 text-sm font-medium mb-1">Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'},</p>
+                <h1 className="text-2xl font-bold tracking-tight">{user?.name?.split(' ')[0]} 👋</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
+                  <ShieldCheckIcon className="w-3.5 h-3.5 text-green-300" />
+                  <span className="text-xs font-medium text-green-200">Secured</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-indigo-200 text-xs uppercase tracking-widest font-medium">Wallet Balance</p>
+                <button onClick={() => setHideBalance(h => !h)} className="text-indigo-300 hover:text-white transition-colors">
+                  {hideBalance ? <EyeIcon className="w-3.5 h-3.5" /> : <EyeSlashIcon className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <p className="text-4xl font-bold tracking-tight">{mask(formatCurrency(user?.walletBalance || 0))}</p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Card Balance', value: mask(formatCurrency(totalCardBalance)), icon: CreditCardIcon },
+                { label: 'Pending', value: mask(formatCurrency(pendingSettlement)), icon: ClockIcon },
+                { label: 'Active Cards', value: activeCards, icon: SparklesIcon },
+              ].map(({ label, value, icon: Icon }) => (
+                <div key={label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10">
+                  <Icon className="w-4 h-4 text-indigo-200 mb-2" />
+                  <p className="text-white font-semibold text-sm">{value}</p>
+                  <p className="text-indigo-300 text-xs mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      {/* Cards & Transactions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* My Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="stats-card"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">My Cards</h3>
-            <Link href="/user/cards" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-              View All
+      {/* ── Quick Actions ─────────────────────────────────────── */}
+      <motion.div {...fade(0.1)}>
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { href: '/user/wallet', icon: WalletIcon, label: 'Wallet', color: 'from-violet-500 to-purple-600' },
+            { href: '/user/cards', icon: CreditCardIcon, label: 'Cards', color: 'from-blue-500 to-cyan-500' },
+            { href: '/user/settlement', icon: BanknotesIcon, label: 'Settle', color: 'from-emerald-500 to-green-600' },
+            { href: '/user/vouchers', icon: GiftIcon, label: 'Vouchers', color: 'from-pink-500 to-rose-500' },
+          ].map(({ href, icon: Icon, label, color }) => (
+            <Link key={href} href={href}>
+              <div className="flex flex-col items-center gap-2 p-4 bg-white rounded-2xl border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-sm`}>
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xs font-semibold text-gray-700">{label}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* ── Income / Expense Summary ──────────────────────────── */}
+      <motion.div {...fade(0.15)}>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+              <ArrowDownLeftIcon className="w-5 h-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 font-medium mb-0.5">Total In</p>
+              <p className="text-lg font-bold text-green-600">{mask(formatCurrency(totalIn))}</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+              <ArrowUpRightIcon className="w-5 h-5 text-red-500" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 font-medium mb-0.5">Total Out</p>
+              <p className="text-lg font-bold text-red-500">{mask(formatCurrency(totalOut))}</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ── My Cards ─────────────────────────────────────────── */}
+      <motion.div {...fade(0.2)}>
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-gray-900">My Cards</h3>
+            <Link href="/user/cards" className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+              View All <ChevronRightIcon className="w-3.5 h-3.5" />
             </Link>
           </div>
+
           {cards.length > 0 ? (
-            <div className="space-y-4">
-              {cards.slice(0, 2).map((card) => (
-                <VirtualCard key={card._id} card={card} className="max-w-none" />
-              ))}
+            <div className="space-y-3">
+              {cards.slice(0, 3).map((card, i) => {
+                const gradients = [
+                  'from-indigo-500 via-purple-500 to-pink-500',
+                  'from-blue-500 via-cyan-500 to-teal-500',
+                  'from-orange-500 via-red-500 to-rose-500',
+                ];
+                const g = gradients[i % gradients.length];
+                return (
+                  <div key={card._id} className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${g} p-4 text-white`}>
+                    <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-white/10" />
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-white/60 mb-1 font-mono tracking-widest">
+                          •••• •••• •••• {card.cardNumber?.slice(-4)}
+                        </p>
+                        <p className="font-bold text-base">{formatCurrency(card.balance)}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          card.status === 'active' ? 'bg-white/20 text-white' : 'bg-black/20 text-white/70'
+                        }`}>
+                          {card.status}
+                        </span>
+                        <p className="text-xs text-white/60 mt-1">{card.expiryDate}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8">
-              <CreditCardIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">No cards yet</p>
-              <Link href="/user/cards" className="btn-primary">
-                Create Your First Card
-              </Link>
+              <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                <CreditCardIcon className="w-7 h-7 text-gray-300" />
+              </div>
+              <p className="text-sm text-gray-400 mb-3">No cards yet</p>
+              <Link href="/user/cards" className="btn-primary text-sm py-2 px-4">Create Card</Link>
             </div>
           )}
-        </motion.div>
+        </div>
+      </motion.div>
 
-        {/* Recent Transactions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="stats-card"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
-            <Link href="/user/transactions" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-              View All
+      {/* ── Recent Transactions ───────────────────────────────── */}
+      <motion.div {...fade(0.25)}>
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-gray-900">Recent Transactions</h3>
+            <Link href="/user/transactions" className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+              View All <ChevronRightIcon className="w-3.5 h-3.5" />
             </Link>
           </div>
+
           {transactions.length > 0 ? (
-            <div className="space-y-4">
-              {transactions.map((transaction) => (
-                <div key={transaction._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      transaction.type === 'credit' ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{transaction.description}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(transaction.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`text-sm font-semibold ${
-                    transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
+            <div className="space-y-1">
+              {transactions.map((tx) => (
+                <div key={tx._id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    tx.type === 'credit' ? 'bg-green-50' : 'bg-red-50'
                   }`}>
-                    {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    {tx.type === 'credit'
+                      ? <ArrowDownLeftIcon className="w-4 h-4 text-green-600" />
+                      : <ArrowUpRightIcon className="w-4 h-4 text-red-500" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{tx.description}</p>
+                    <p className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  </div>
+                  <span className={`text-sm font-bold flex-shrink-0 ${tx.type === 'credit' ? 'text-green-600' : 'text-red-500'}`}>
+                    {tx.type === 'credit' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <DocumentChartBarIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No transactions yet</p>
+              <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                <DocumentChartBarIcon className="w-7 h-7 text-gray-300" />
+              </div>
+              <p className="text-sm text-gray-400">No transactions yet</p>
             </div>
           )}
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
+
+      {/* ── Security Banner ───────────────────────────────────── */}
+      <motion.div {...fade(0.3)}>
+        <div className="flex items-center gap-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-5">
+          <div className="w-11 h-11 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+            <ShieldCheckIcon className="w-6 h-6 text-green-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-semibold text-sm">Your account is secure</p>
+            <p className="text-slate-400 text-xs mt-0.5">256-bit encryption · JWT protected · KYC verified</p>
+          </div>
+          <Link href="/user/kyc" className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex-shrink-0">
+            KYC Status
+          </Link>
+        </div>
+      </motion.div>
+
     </div>
   );
 }

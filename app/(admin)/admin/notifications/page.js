@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { BellIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { PageHeader } from '@/components/ui/AdminComponents';
 
 export default function AdminNotificationsPage() {
   const [notifications, setNotifications] = useState([]);
@@ -51,63 +51,48 @@ export default function AdminNotificationsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-        <p className="text-gray-600 mt-2">Settlement requests and system alerts</p>
-      </motion.div>
+    <div className="space-y-5">
+      <PageHeader icon={BellIcon} title="Notifications" subtitle="Payment requests and system alerts" color="from-amber-500 to-orange-500" />
 
-      <div className="stats-card">
-        {notifications.length > 0 ? (
-          <div className="space-y-4">
-            {notifications.map((notif) => (
-              <div key={notif._id} className="flex items-start space-x-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <BellIcon className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="font-semibold text-gray-900">{notif.userId?.name}</p>
-                    <span className="text-xs text-gray-500">
-                      {new Date(notif.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700">{notif.description}</p>
-                  <p className="text-sm font-medium text-blue-600 mt-1">
-                    Amount: ₹{notif.amount?.toFixed(2)}
-                  </p>
-                  {notif.type === 'payment_request' && notif.metadata && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <p>UTR: {notif.reference}</p>
-                      <p>Name: {notif.metadata.name}</p>
-                    </div>
-                  )}
-                  {notif.type === 'payment_request' && notif.status === 'pending' && (
-                    <div className="flex space-x-2 mt-3">
-                      <button
-                        onClick={() => handlePaymentAction(notif._id, 'approve')}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-1"
-                      >
-                        <CheckIcon className="w-4 h-4" />
-                        <span>Approve</span>
-                      </button>
-                      <button
-                        onClick={() => handlePaymentAction(notif._id, 'reject')}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-1"
-                      >
-                        <XMarkIcon className="w-4 h-4" />
-                        <span>Reject</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+      <div className="space-y-3">
+        {notifications.length > 0 ? notifications.map((notif) => (
+          <div key={notif._id} className="bg-white rounded-2xl border border-gray-100 p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <BellIcon className="w-5 h-5 text-indigo-600" />
               </div>
-            ))}
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-semibold text-gray-900 text-sm">{notif.userId?.name}</p>
+                  <span className="text-xs text-gray-400">{new Date(notif.createdAt).toLocaleString('en-IN')}</span>
+                </div>
+                <p className="text-sm text-gray-600">{notif.description}</p>
+                <p className="text-sm font-semibold text-indigo-600 mt-1">₹{notif.amount?.toFixed(2)}</p>
+                {notif.type === 'payment_request' && notif.metadata && (
+                  <div className="mt-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
+                    <p>UTR: <span className="font-mono font-semibold">{notif.reference}</span></p>
+                    <p>Name: {notif.metadata.name}</p>
+                  </div>
+                )}
+                {notif.type === 'payment_request' && notif.status === 'pending' && (
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => handlePaymentAction(notif._id, 'approve')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700">
+                      <CheckIcon className="w-4 h-4" /> Approve
+                    </button>
+                    <button onClick={() => handlePaymentAction(notif._id, 'reject')} className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700">
+                      <XMarkIcon className="w-4 h-4" /> Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <BellIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No notifications</p>
+        )) : (
+          <div className="bg-white rounded-2xl border border-gray-100 text-center py-16">
+            <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-3">
+              <BellIcon className="w-7 h-7 text-gray-300" />
+            </div>
+            <p className="text-sm text-gray-400">No notifications</p>
           </div>
         )}
       </div>

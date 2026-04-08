@@ -138,11 +138,6 @@ export default function VirtualCard({
                 </div>
               </div>
 
-              <div className="text-white text-xs space-y-2 opacity-80">
-                <p>• This card is property of PPR Smart System</p>
-                <p>• Report lost or stolen cards immediately</p>
-                <p>• For customer service: support@ppr.com</p>
-              </div>
             </div>
           </div>
         </motion.div>

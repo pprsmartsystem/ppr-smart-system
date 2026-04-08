@@ -3,170 +3,136 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { 
-  EyeIcon, 
-  EyeSlashIcon, 
-  SparklesIcon,
-  ArrowRightIcon 
-} from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, SparklesIcon, ArrowRightIcon, ShieldCheckIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const response = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(form),
       });
-
-      const data = await response.json();
-      console.log('Response:', data);
-
+      const data = await res.json();
       if (data.success) {
-        toast.success('Login successful! Redirecting...');
-        console.log('Redirecting to:', data.redirectUrl);
-        
-        // Force page reload to new URL
+        toast.success('Welcome back!');
         window.location.replace(data.redirectUrl);
       } else {
         toast.error(data.message || 'Login failed');
         setLoading(false);
       }
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch {
       toast.error('Connection error. Please try again.');
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl"></div>
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="relative w-full max-w-md"
-      >
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2">
-            <div className="w-12 h-12 bg-premium-gradient rounded-xl flex items-center justify-center">
+    <div className="min-h-screen flex bg-gray-50">
+      {/* Left panel — hidden on mobile */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1d4ed8 100%)' }}>
+        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #818cf8, transparent)' }} />
+        <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #38bdf8, transparent)' }} />
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
               <SparklesIcon className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-violet-600 bg-clip-text text-transparent">
-              PPR Smart System
-            </span>
-          </Link>
+            <span className="text-white font-bold text-lg">PPR Smart System</span>
+          </div>
+          <div>
+            <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
+              The future of<br />digital gifting &<br />corporate rewards
+            </h2>
+            <p className="text-indigo-300 text-sm leading-relaxed mb-8">
+              Manage virtual cards, distribute allowances, settle payments and track everything in one secure platform.
+            </p>
+            <div className="space-y-3">
+              {['256-bit SSL encryption', 'JWT secured sessions', 'Role-based access control', 'Real-time transaction monitoring'].map(f => (
+                <div key={f} className="flex items-center gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                    <ShieldCheckIcon className="w-3 h-3 text-green-400" />
+                  </div>
+                  <span className="text-indigo-200 text-sm">{f}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="text-indigo-400 text-xs">© {new Date().getFullYear()} PPR Smart System. All rights reserved.</p>
         </div>
+      </div>
 
-        {/* Login Form */}
-        <div className="glass rounded-2xl p-8 shadow-xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
-            <p className="text-gray-600">Sign in to your account to continue</p>
+      {/* Right panel */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+          className="w-full max-w-md">
+
+          {/* Mobile logo */}
+          <div className="flex items-center gap-3 mb-8 lg:hidden">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <SparklesIcon className="w-6 h-6 text-white" />
+            </div>
+            <span className="font-bold text-gray-900 text-lg">PPR Smart System</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
+            <p className="text-gray-500 text-sm">Sign in to your account to continue</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="input-field"
-                placeholder="Enter your email"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
+              <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                placeholder="you@example.com" required className="input-field" />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="input-field pr-12"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? (
-                    <EyeSlashIcon className="w-5 h-5" />
-                  ) : (
-                    <EyeIcon className="w-5 h-5" />
-                  )}
+                <input type={showPw ? 'text' : 'password'} value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  placeholder="Enter your password" required className="input-field pr-11" />
+                <button type="button" onClick={() => setShowPw(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                  {showPw ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-primary flex items-center justify-center"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRightIcon className="w-4 h-4 ml-2" />
-                </>
-              )}
+            <button type="submit" disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold transition-all shadow-sm disabled:opacity-60">
+              {loading
+                ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                : <><LockClosedIcon className="w-4 h-4" /> Sign In <ArrowRightIcon className="w-4 h-4" /></>}
             </button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-gray-600">
-              Don&apos;t have an account?{' '}
-              <Link 
-                href="/register" 
-                className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
-              >
-                Sign up
-              </Link>
-            </p>
+          <div className="mt-6 flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
           </div>
-        </div>
-      </motion.div>
+
+          <p className="text-center text-sm text-gray-500 mt-6">
+            Don&apos;t have an account?{' '}
+            <Link href="/register" className="font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">Create account</Link>
+          </p>
+
+          <div className="mt-8 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+            <ShieldCheckIcon className="w-3.5 h-3.5 text-green-500" />
+            <span>Secured with 256-bit SSL encryption</span>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

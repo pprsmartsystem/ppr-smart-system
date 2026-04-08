@@ -21,7 +21,16 @@ export async function GET() {
     }
 
     await connectDB();
-    const cards = await Card.find({ userId: decoded.userId }).sort({ createdAt: -1 });
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const cards = await Card.find({
+      userId: decoded.userId,
+      $or: [
+        { balance: { $gt: 0 } },
+        { updatedAt: { $gte: todayStart } },
+      ],
+    }).sort({ createdAt: -1 });
 
     return NextResponse.json({ cards });
   } catch (error) {

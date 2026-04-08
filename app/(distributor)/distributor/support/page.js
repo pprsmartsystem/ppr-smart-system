@@ -138,8 +138,8 @@ export default function DistributorSupportPage() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-8 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <h2 className="text-2xl font-bold mb-6">Create Support Ticket</h2>
             <form onSubmit={handleCreateTicket} className="space-y-4">
               <div>
@@ -167,7 +167,7 @@ export default function DistributorSupportPage() {
                 <button type="submit" className="flex-1 btn-primary">Create Ticket</button>
               </div>
             </form>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>
