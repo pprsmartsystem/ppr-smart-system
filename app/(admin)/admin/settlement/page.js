@@ -14,6 +14,7 @@ export default function AdminSettlementPage() {
   const [selectedProcessed, setSelectedProcessed] = useState([]);
   const [autoInfo, setAutoInfo] = useState(null);
   const [autoRunning, setAutoRunning] = useState(false);
+  const [forceRunning, setForceRunning] = useState(false);
 
   useEffect(() => { fetchSettlements(); fetchUsers(); fetchAutoInfo(); }, []);
 
@@ -29,7 +30,7 @@ export default function AdminSettlementPage() {
       const now = new Date();
       const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
       if (ist.getHours() === 10 && ist.getMinutes() === 30 && ist.getSeconds() < 10) {
-        handleAutoSettle(true);
+        handleAutoSettle(true, false);
       }
     };
     const t = setInterval(checkTime, 5000);
@@ -41,21 +42,29 @@ export default function AdminSettlementPage() {
     if (res.ok) setAutoInfo(await res.json());
   };
 
-  const handleAutoSettle = async (silent = false) => {
-    if (autoRunning) return;
-    setAutoRunning(true);
+  const handleAutoSettle = async (silent = false, force = false) => {
+    if (autoRunning || forceRunning) return;
+    force ? setForceRunning(true) : setAutoRunning(true);
     try {
-      const res = await fetch('/api/admin/settlement/auto', { method: 'POST' });
+      const res = await fetch('/api/admin/settlement/auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force }),
+      });
       const data = await res.json();
       if (res.ok) {
-        if (!silent || data.count > 0) toast.success(data.message);
+        if (data.skipped) {
+          toast.error(data.message);
+        } else if (!silent || data.count > 0) {
+          toast.success(data.message);
+        }
         fetchSettlements();
         fetchAutoInfo();
       } else {
         toast.error(data.error || 'Auto-settlement failed');
       }
     } catch { toast.error('Auto-settlement failed'); }
-    finally { setAutoRunning(false); }
+    finally { setAutoRunning(false); setForceRunning(false); }
   };
 
   useEffect(() => { fetchSettlements(); fetchUsers(); }, []);
@@ -160,30 +169,54 @@ export default function AdminSettlementPage() {
       </motion.div>
 
       {/* Auto-Settlement Banner */}
-      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="w-11 h-11 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-          <ClockIcon className="w-6 h-6 text-indigo-300" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-0.5">
-            <p className="text-white font-semibold text-sm">Auto-Settlement Schedule</p>
-            <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-medium">Active</span>
+      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+            <ClockIcon className="w-6 h-6 text-indigo-300" />
           </div>
-          <p className="text-indigo-300 text-xs">
-            Runs automatically every day at <span className="text-white font-bold">10:30 AM IST</span>
-            {autoInfo?.nextRunIST && <> · Next run: <span className="text-amber-300 font-medium">{autoInfo.nextRunIST}</span></>}
-            {autoInfo?.pendingCount > 0 && <> · <span className="text-yellow-300 font-medium">{autoInfo.pendingCount} pending</span></>}
-          </p>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-0.5">
+              <p className="text-white font-semibold text-sm">Auto-Settlement Schedule</p>
+              {autoInfo?.isBankingDay === false
+                ? <span className="text-xs bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full font-medium">Non-Banking Day</span>
+                : <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-medium">Active</span>
+              }
+            </div>
+            <p className="text-indigo-300 text-xs">
+              Runs at <span className="text-white font-bold">10:30 AM IST</span> on banking days
+              {autoInfo?.todayStatus && autoInfo.isBankingDay === false &&
+                <> · <span className="text-red-300">{autoInfo.todayStatus}</span></>}
+              {autoInfo?.nextRunIST &&
+                <> · Next: <span className="text-amber-300 font-medium">{autoInfo.nextRunIST}</span></>}
+              {autoInfo?.pendingCount > 0 &&
+                <> · <span className="text-yellow-300 font-medium">{autoInfo.pendingCount} pending</span></>}
+            </p>
+            <p className="text-indigo-400 text-xs mt-1">
+              Excludes: Sundays · 2nd &amp; 4th Saturdays · Government/bank holidays
+            </p>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={() => handleAutoSettle(false, false)}
+              disabled={autoRunning || forceRunning}
+              className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors"
+            >
+              {autoRunning
+                ? <><ArrowPathIcon className="w-3.5 h-3.5 animate-spin" /> Running...</>
+                : <><BoltIcon className="w-3.5 h-3.5" /> Run Now</>}
+            </button>
+            <button
+              onClick={() => handleAutoSettle(false, true)}
+              disabled={autoRunning || forceRunning}
+              title="Force run even on non-banking days"
+              className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors"
+            >
+              {forceRunning
+                ? <><ArrowPathIcon className="w-3.5 h-3.5 animate-spin" /> Forcing...</>
+                : <><BoltIcon className="w-3.5 h-3.5" /> Force Run</>}
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => handleAutoSettle(false)}
-          disabled={autoRunning}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors flex-shrink-0"
-        >
-          {autoRunning
-            ? <><ArrowPathIcon className="w-4 h-4 animate-spin" /> Running...</>
-            : <><BoltIcon className="w-4 h-4" /> Run Now</>}
-        </button>
       </div>
 
       {/* Pending */}

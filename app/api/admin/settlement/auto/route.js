@@ -5,22 +5,30 @@ import connectDB from '@/lib/mongodb';
 import Settlement from '@/models/Settlement';
 import Transaction from '@/models/Transaction';
 import User from '@/models/User';
+import { checkIsBankingDay, getNextSettlementTime } from '@/utils/bankingDays';
 
-// GET — next run time & pending count
+// GET — next banking day run time & pending count
 export async function GET() {
   try {
     const now = new Date();
-    // 10:30 AM IST = 05:00 UTC
-    const nextRun = new Date();
-    nextRun.setUTCHours(5, 0, 0, 0);
-    if (now.getUTCHours() >= 5) nextRun.setUTCDate(nextRun.getUTCDate() + 1);
+    const { isBankingDay, reason } = checkIsBankingDay(now);
+    const nextRun = getNextSettlementTime(now);
 
     await connectDB();
     const pendingCount = await Settlement.countDocuments({ status: 'pending', type: { $ne: 'user' } });
 
     return NextResponse.json({
+      isBankingDay,
+      todayStatus: reason,
       nextRun: nextRun.toISOString(),
-      nextRunIST: nextRun.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', year: 'numeric' }),
+      nextRunIST: nextRun.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
       pendingCount,
     });
   } catch {
@@ -28,7 +36,7 @@ export async function GET() {
   }
 }
 
-// POST — trigger auto-settlement (admin only)
+// POST — manually trigger auto-settlement (admin only, respects banking day)
 export async function POST(request) {
   try {
     const token = cookies().get('token')?.value;
@@ -36,6 +44,22 @@ export async function POST(request) {
     const decoded = verifyToken(token);
     if (!decoded || decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
+    const now = new Date();
+    const { isBankingDay, reason } = checkIsBankingDay(now);
+
+    // Check if force flag is passed (admin can override)
+    const body = await request.json().catch(() => ({}));
+    const force = body.force === true;
+
+    if (!isBankingDay && !force) {
+      return NextResponse.json({
+        success: false,
+        skipped: true,
+        reason,
+        message: `Settlement skipped — ${reason}. Use "Force Run" to override.`,
+      }, { status: 200 });
     }
 
     await connectDB();
@@ -66,7 +90,7 @@ export async function POST(request) {
           type: 'credit',
           amount: s.settlementAmount,
           status: 'completed',
-          description: `Auto Settlement - ${new Date().toLocaleDateString('en-IN')}`,
+          description: `Auto Settlement - ${now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}${force && !isBankingDay ? ' (Forced)' : ''}`,
           reference: `AUTO-SETTLE-${Date.now()}-${count}`,
         });
         count++;
@@ -75,7 +99,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: `Auto-settlement complete: ${count} processed${failed ? `, ${failed} failed` : ''}`,
+      message: `Auto-settlement complete: ${count} processed${failed ? `, ${failed} failed` : ''}${force && !isBankingDay ? ' (forced on non-banking day)' : ''}`,
       count,
       failed,
     });
