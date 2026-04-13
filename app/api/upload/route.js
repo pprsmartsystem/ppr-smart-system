@@ -21,7 +21,7 @@ export async function POST(request) {
 
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
-        { folder: 'ppr_qr_codes' },
+        { folder: 'ppr_kyc_documents', resource_type: 'auto' },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
@@ -31,6 +31,7 @@ export async function POST(request) {
 
     return NextResponse.json({ url: result.secure_url });
   } catch (error) {
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+    console.error('Upload error:', error);
+    return NextResponse.json({ error: error.message || 'Upload failed' }, { status: 500 });
   }
 }

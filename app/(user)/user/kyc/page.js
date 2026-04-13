@@ -33,15 +33,15 @@ export default function KYCPage() {
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'ml_default');
 
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/auto/upload`,
-      { method: 'POST', body: formData }
-    );
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
 
     const data = await res.json();
-    return data.secure_url;
+    if (!data.url) throw new Error('Upload failed — no URL returned');
+    return data.url;
   };
 
   const handleFileChange = (e, field) => {
@@ -68,9 +68,16 @@ export default function KYCPage() {
 
       for (const [key, file] of Object.entries(files)) {
         if (file) {
-          toast.loading(`Uploading ${key}...`);
-          uploadedUrls[key] = await uploadToCloudinary(file);
-          toast.dismiss();
+          const loadingToast = toast.loading(`Uploading ${key.replace(/([A-Z])/g, ' $1').toLowerCase()}...`);
+          try {
+            uploadedUrls[key] = await uploadToCloudinary(file);
+            toast.dismiss(loadingToast);
+          } catch (err) {
+            toast.dismiss(loadingToast);
+            toast.error(`Failed to upload ${key} — please try again`);
+            setUploading(false);
+            return;
+          }
         }
       }
 
