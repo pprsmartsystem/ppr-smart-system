@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
-import UserSettings from '@/models/UserSettings';
+import mongoose from 'mongoose';
+
+const DEFAULT_MESSAGE = `We would like to inform you that due to an internal system update, our platform is currently under maintenance.
+
+During this period, certain services may be temporarily unavailable. We request you to kindly hold your transactions until the maintenance is completed.
+
+Our team is actively working to restore all services at the earliest.`;
 
 export async function POST(request) {
   try {
@@ -15,24 +21,30 @@ export async function POST(request) {
 
     await connectDB();
     const { userId, enabled, message } = await request.json();
-
     if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 });
 
-    const update = { maintenanceMode: enabled };
-    if (message !== undefined) update.maintenanceMessage = message;
+    const collection = mongoose.connection.collection('usersettings');
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    const settings = await UserSettings.findOneAndUpdate(
-      { userId },
-      { $set: update },
-      { upsert: true, new: true }
+    await collection.updateOne(
+      { userId: userObjectId },
+      {
+        $set: {
+          maintenanceMode: enabled === true,
+          maintenanceMessage: message || DEFAULT_MESSAGE,
+          updatedAt: new Date(),
+        },
+        $setOnInsert: { createdAt: new Date() },
+      },
+      { upsert: true }
     );
 
     return NextResponse.json({
       success: true,
       message: `Maintenance mode ${enabled ? 'enabled' : 'disabled'} for user`,
-      settings,
     });
-  } catch (error) {
+  } catch (err) {
+    console.error('maintenance toggle error:', err);
     return NextResponse.json({ error: 'Failed to update maintenance mode' }, { status: 500 });
   }
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
-import UserSettings from '@/models/UserSettings';
+import mongoose from 'mongoose';
 
 export async function GET() {
   try {
@@ -14,11 +14,15 @@ export async function GET() {
     }
 
     await connectDB();
-    const settings = await UserSettings.find({ maintenanceMode: true }).select('userId');
-    const maintenanceUserIds = settings.map(s => s.userId.toString());
+
+    // Use raw collection to bypass any schema/model cache issues
+    const collection = mongoose.connection.collection('usersettings');
+    const docs = await collection.find({ maintenanceMode: true }, { projection: { userId: 1 } }).toArray();
+    const maintenanceUserIds = docs.map(d => d.userId.toString());
 
     return NextResponse.json({ maintenanceUserIds });
-  } catch {
+  } catch (err) {
+    console.error('maintenance-status error:', err);
     return NextResponse.json({ maintenanceUserIds: [] });
   }
 }

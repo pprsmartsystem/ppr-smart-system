@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import connectDB from '@/lib/mongodb';
-import UserSettings from '@/models/UserSettings';
+import mongoose from 'mongoose';
 
 const DEFAULT_MESSAGE = `We would like to inform you that due to an internal system update, our platform is currently under maintenance.
 
@@ -18,7 +18,9 @@ export async function GET() {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     await connectDB();
 
-    const settings = await UserSettings.findOne({ userId: decoded.userId }).lean();
+    const collection = mongoose.connection.collection('usersettings');
+    const userObjectId = new mongoose.Types.ObjectId(decoded.userId);
+    const settings = await collection.findOne({ userId: userObjectId });
 
     return NextResponse.json({
       maintenanceMode: settings?.maintenanceMode === true,
