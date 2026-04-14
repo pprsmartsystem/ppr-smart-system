@@ -24,17 +24,17 @@ export async function POST(request) {
       );
     }
 
-    if (user.status !== 'approved') {
+    // Check if account is on hold FIRST (before general status check)
+    if (user.isOnHold) {
       return NextResponse.json(
-        { success: false, message: 'Your account is pending approval' },
+        { success: false, message: `Your account has been temporarily placed on hold${user.holdReason ? '. Reason: ' + user.holdReason : '. Please contact admin.'}` },
         { status: 403 }
       );
     }
 
-    // Check if distributor is on hold
-    if (user.isOnHold) {
+    if (user.status !== 'approved') {
       return NextResponse.json(
-        { success: false, message: `Your account has been temporarily placed on hold${user.holdReason ? ': ' + user.holdReason : '. Please contact admin.'}` },
+        { success: false, message: 'Your account is pending approval' },
         { status: 403 }
       );
     }
