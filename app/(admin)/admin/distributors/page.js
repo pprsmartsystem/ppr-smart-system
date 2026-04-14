@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserGroupIcon, PlusIcon, TrashIcon, WalletIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, PlusIcon, TrashIcon, WalletIcon, EyeIcon, EyeSlashIcon, PauseCircleIcon, PlayCircleIcon } from '@heroicons/react/24/outline';
 import { formatCurrency } from '@/utils/cardUtils';
 import toast from 'react-hot-toast';
 import { PageHeader, StatusBadge, AdminModal, ActionBtn } from '@/components/ui/AdminComponents';
@@ -13,6 +13,8 @@ export default function AdminDistributorsPage() {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showDeductModal, setShowDeductModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [showHoldModal, setShowHoldModal] = useState(false);
+  const [holdReason, setHoldReason] = useState('');
   const [selectedDistributor, setSelectedDistributor] = useState(null);
   const [distributorStats, setDistributorStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -167,6 +169,31 @@ export default function AdminDistributorsPage() {
     }
   };
 
+  const handleHoldDistributor = async (action) => {
+    try {
+      const res = await fetch('/api/admin/distributors/hold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          distributorId: selectedDistributor._id,
+          action,
+          reason: holdReason,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message);
+        setShowHoldModal(false);
+        setHoldReason('');
+        setSelectedDistributor(null);
+        fetchDistributors();
+      } else {
+        toast.error(data.error || 'Failed');
+      }
+    } catch { toast.error('Failed to update hold status'); }
+  };
+
   const generatePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let password = '';
@@ -201,13 +228,40 @@ export default function AdminDistributorsPage() {
                   <td className="px-4 py-3 text-sm text-gray-500">{dist.email}</td>
                   <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatCurrency(dist.walletBalance || 0)}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{dist.userCount || 0}</td>
-                  <td className="px-4 py-3"><StatusBadge status={dist.status} /></td>
+                  <td className="px-4 py-3">
+                    <div className="space-y-1">
+                      <StatusBadge status={dist.isOnHold ? 'blocked' : dist.status} />
+                      {dist.isOnHold && dist.holdReason && (
+                        <p className="text-xs text-amber-600 font-medium truncate max-w-[120px]" title={dist.holdReason}>
+                          🔒 {dist.holdReason}
+                        </p>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-xs text-gray-400">{new Date(dist.createdAt).toLocaleDateString('en-IN')}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
                       <ActionBtn icon={EyeIcon} onClick={() => { setSelectedDistributor(dist); fetchDistributorStats(dist._id); setShowStatsModal(true); }} color="text-blue-600 hover:bg-blue-50" title="View Stats" />
                       <ActionBtn icon={WalletIcon} onClick={() => { setSelectedDistributor(dist); setShowWalletModal(true); }} color="text-green-600 hover:bg-green-50" title="Add Balance" />
                       <ActionBtn icon={() => <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>} onClick={() => { setSelectedDistributor(dist); setShowDeductModal(true); }} color="text-orange-600 hover:bg-orange-50" title="Deduct Balance" />
+                      {/* Hold / Unhold */}
+                      {dist.isOnHold || dist.status === 'blocked' ? (
+                        <button
+                          onClick={() => { setSelectedDistributor(dist); handleHoldDistributor('unhold'); }}
+                          title="Remove Hold"
+                          className="p-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors"
+                        >
+                          <PlayCircleIcon className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { setSelectedDistributor(dist); setShowHoldModal(true); }}
+                          title="Place on Hold"
+                          className="p-1.5 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                        >
+                          <PauseCircleIcon className="w-4 h-4" />
+                        </button>
+                      )}
                       <ActionBtn icon={TrashIcon} onClick={() => handleDeleteDistributor(dist._id)} color="text-red-600 hover:bg-red-50" title="Delete" />
                     </div>
                   </td>
@@ -404,6 +458,63 @@ export default function AdminDistributorsPage() {
               <button type="submit" className="flex-1 py-3 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700">Deduct</button>
             </div>
           </form>
+        </AdminModal>
+      )}
+      {showHoldModal && selectedDistributor && (
+        <AdminModal
+          title="Place Distributor on Hold"
+          subtitle={`Temporarily suspend ${selectedDistributor.name}'s account`}
+          onClose={() => { setShowHoldModal(false); setHoldReason(''); setSelectedDistributor(null); }}
+        >
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <PauseCircleIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">Account will be temporarily suspended</p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    The distributor will not be able to log in or perform any operations.
+                    Their users and data will remain intact. You can remove the hold anytime.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
+              {[['Name', selectedDistributor.name], ['Email', selectedDistributor.email], ['Wallet', formatCurrency(selectedDistributor.walletBalance || 0)], ['Users', selectedDistributor.userCount || 0]].map(([k, v]) => (
+                <div key={k} className="flex justify-between text-sm">
+                  <span className="text-gray-500">{k}</span>
+                  <span className="font-semibold text-gray-900">{v}</span>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason for Hold <span className="text-gray-400">(optional)</span></label>
+              <textarea
+                value={holdReason}
+                onChange={e => setHoldReason(e.target.value)}
+                placeholder="e.g. Suspicious activity, pending verification, compliance review..."
+                className="input-field resize-none text-sm"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowHoldModal(false); setHoldReason(''); setSelectedDistributor(null); }}
+                className="flex-1 btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleHoldDistributor('hold')}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm transition-colors"
+              >
+                <PauseCircleIcon className="w-4 h-4" /> Place on Hold
+              </button>
+            </div>
+          </div>
         </AdminModal>
       )}
     </div>

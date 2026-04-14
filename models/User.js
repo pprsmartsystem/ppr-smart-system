@@ -54,6 +54,18 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
   },
+  isOnHold: {
+    type: Boolean,
+    default: false,
+  },
+  holdReason: {
+    type: String,
+    default: null,
+  },
+  heldAt: {
+    type: Date,
+    default: null,
+  },
 }, {
   timestamps: true,
 });

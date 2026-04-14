@@ -31,6 +31,14 @@ export async function POST(request) {
       );
     }
 
+    // Check if distributor is on hold
+    if (user.isOnHold) {
+      return NextResponse.json(
+        { success: false, message: `Your account has been temporarily placed on hold${user.holdReason ? ': ' + user.holdReason : '. Please contact admin.'}` },
+        { status: 403 }
+      );
+    }
+
     const isValidPassword = await verifyPassword(password, user.password);
     if (!isValidPassword) {
       return NextResponse.json(
