@@ -42,6 +42,7 @@ export default function AdminUsersPage() {
       const res = await fetch('/api/admin/users/maintenance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ userId: id, enabled }),
       });
       if (res.ok) {
@@ -72,7 +73,7 @@ export default function AdminUsersPage() {
     try {
       const [usersRes, settingsRes] = await Promise.all([
         fetch('/api/admin/users'),
-        fetch('/api/admin/users/maintenance-status').catch(() => null),
+        fetch('/api/admin/users/maintenance-status', { credentials: 'include' }).catch(() => null),
       ]);
       if (usersRes.ok) {
         const data = await usersRes.json();

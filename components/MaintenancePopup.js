@@ -11,6 +11,7 @@ export default function MaintenancePopup() {
     try {
       const res = await fetch('/api/user/maintenance', {
         cache: 'no-store',
+        credentials: 'include',
         headers: { 'Cache-Control': 'no-cache' },
       });
       if (!res.ok) return;
