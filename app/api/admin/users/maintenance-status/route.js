@@ -4,6 +4,14 @@ import { verifyToken } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import mongoose from 'mongoose';
 
+async function getCollection() {
+  await connectDB();
+  if (mongoose.connection.readyState !== 1) {
+    await new Promise(resolve => mongoose.connection.once('connected', resolve));
+  }
+  return mongoose.connection.db.collection('usersettings');
+}
+
 export async function GET() {
   try {
     const token = cookies().get('token')?.value;
@@ -13,16 +21,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    await connectDB();
+    const col = await getCollection();
+    const docs = await col.find(
+      { maintenanceMode: true },
+      { projection: { userId: 1 } }
+    ).toArray();
 
-    // Use raw collection to bypass any schema/model cache issues
-    const collection = mongoose.connection.collection('usersettings');
-    const docs = await collection.find({ maintenanceMode: true }, { projection: { userId: 1 } }).toArray();
     const maintenanceUserIds = docs.map(d => d.userId.toString());
-
     return NextResponse.json({ maintenanceUserIds });
   } catch (err) {
-    console.error('maintenance-status error:', err);
+    console.error('[maintenance-status/GET]', err);
     return NextResponse.json({ maintenanceUserIds: [] });
   }
 }

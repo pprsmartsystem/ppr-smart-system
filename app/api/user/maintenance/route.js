@@ -10,23 +10,36 @@ During this period, certain services may be temporarily unavailable. We request 
 
 Our team is actively working to restore all services at the earliest.`;
 
+async function getCollection() {
+  await connectDB();
+  if (mongoose.connection.readyState !== 1) {
+    await new Promise(resolve => mongoose.connection.once('connected', resolve));
+  }
+  return mongoose.connection.db.collection('usersettings');
+}
+
 export async function GET() {
   try {
     const token = cookies().get('token')?.value;
     if (!token) return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    await connectDB();
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
+    }
 
-    const collection = mongoose.connection.collection('usersettings');
+    const col = await getCollection();
     const userObjectId = new mongoose.Types.ObjectId(decoded.userId);
-    const settings = await collection.findOne({ userId: userObjectId });
+    const settings = await col.findOne({ userId: userObjectId });
 
     return NextResponse.json({
       maintenanceMode: settings?.maintenanceMode === true,
       maintenanceMessage: settings?.maintenanceMessage || DEFAULT_MESSAGE,
     });
-  } catch {
+  } catch (err) {
+    console.error('[user/maintenance/GET]', err);
     return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
   }
 }

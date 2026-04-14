@@ -1,39 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { WrenchScrewdriverIcon, ShieldExclamationIcon } from '@heroicons/react/24/outline';
 
 export default function MaintenancePopup() {
   const [show, setShow] = useState(false);
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    checkMaintenance();
-    // Poll every 30 seconds so popup disappears when admin disables it
-    const t = setInterval(checkMaintenance, 30000);
-    return () => clearInterval(t);
+  const checkMaintenance = useCallback(async () => {
+    try {
+      const res = await fetch('/api/user/maintenance', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setShow(data.maintenanceMode === true);
+      if (data.maintenanceMessage) setMessage(data.maintenanceMessage);
+    } catch {
+      // silently fail — don't block user if API is down
+    }
   }, []);
 
-  const checkMaintenance = async () => {
-    try {
-      const res = await fetch('/api/user/maintenance', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        setShow(data.maintenanceMode || false);
-        setMessage(data.maintenanceMessage || '');
-      }
-    } catch {
-      // silently fail
-    }
-  };
+  useEffect(() => {
+    // Check immediately on mount
+    checkMaintenance();
+    // Then poll every 15 seconds
+    const t = setInterval(checkMaintenance, 15000);
+    return () => clearInterval(t);
+  }, [checkMaintenance]);
 
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+      // Prevent any click from closing
+      onClick={e => e.stopPropagation()}
+    >
       <div className="w-full max-w-lg">
-        {/* Card */}
         <div className="bg-white rounded-3xl overflow-hidden shadow-2xl">
           {/* Top gradient bar */}
           <div className="h-2 w-full bg-gradient-to-r from-amber-400 via-orange-500 to-red-500" />
@@ -48,9 +54,7 @@ export default function MaintenancePopup() {
             </div>
 
             {/* Title */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              System Maintenance
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">System Maintenance</h2>
             <div className="flex items-center justify-center gap-1.5 mb-6">
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
               <span className="text-xs font-semibold text-amber-600 uppercase tracking-widest">In Progress</span>
@@ -59,9 +63,7 @@ export default function MaintenancePopup() {
 
             {/* Message */}
             <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 mb-6 text-left">
-              <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
-                {message}
-              </p>
+              <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{message}</p>
             </div>
 
             {/* Info strip */}
@@ -72,16 +74,9 @@ export default function MaintenancePopup() {
               </p>
             </div>
 
-            {/* Services disabled list */}
+            {/* Disabled services */}
             <div className="grid grid-cols-2 gap-2 mb-6">
-              {[
-                'Wallet Transactions',
-                'Card Operations',
-                'Settlement Requests',
-                'Payment Gateway',
-                'Voucher Redemption',
-                'KYC Submission',
-              ].map(s => (
+              {['Wallet Transactions', 'Card Operations', 'Settlement Requests', 'Payment Gateway', 'Voucher Redemption', 'KYC Submission'].map(s => (
                 <div key={s} className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
                   <span className="text-xs text-red-700 font-medium">{s}</span>
@@ -89,7 +84,6 @@ export default function MaintenancePopup() {
               ))}
             </div>
 
-            {/* Footer */}
             <p className="text-xs text-gray-400">
               For urgent queries contact{' '}
               <a href="mailto:contact@pprsmartsystem.com" className="text-indigo-500 font-semibold hover:underline">
