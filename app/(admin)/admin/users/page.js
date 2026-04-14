@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import {
   CheckCircleIcon, XCircleIcon, MagnifyingGlassIcon, FunnelIcon,
   PlusCircleIcon, NoSymbolIcon, EyeIcon, CheckIcon, TrashIcon,
-  ArrowRightCircleIcon, MinusCircleIcon, UserGroupIcon,
+  ArrowRightCircleIcon, MinusCircleIcon, UserGroupIcon, WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
 import { PageHeader, AdminTable, StatusBadge, AdminModal, ActionBtn } from '@/components/ui/AdminComponents';
 
@@ -29,11 +29,34 @@ export default function AdminUsersPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [generatedPassword, setGeneratedPassword] = useState('');
+  const [maintenanceUsers, setMaintenanceUsers] = useState(new Set());
 
   useEffect(() => {
     fetchUsers();
     fetchDistributors();
   }, []);
+
+  const handleToggleMaintenance = async (userId, enabled) => {
+    const id = userId.toString();
+    try {
+      const res = await fetch('/api/admin/users/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: id, enabled }),
+      });
+      if (res.ok) {
+        toast.success(`Maintenance mode ${enabled ? 'enabled 🔧' : 'disabled ✓'} for user`);
+        setMaintenanceUsers(prev => {
+          const next = new Set(prev);
+          enabled ? next.add(id) : next.delete(id);
+          return next;
+        });
+      } else {
+        const d = await res.json();
+        toast.error(d.error || 'Failed to update maintenance mode');
+      }
+    } catch { toast.error('Failed to update maintenance mode'); }
+  };
 
   const fetchDistributors = async () => {
     try {
@@ -47,10 +70,17 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/admin/users');
-      if (res.ok) {
-        const data = await res.json();
+      const [usersRes, settingsRes] = await Promise.all([
+        fetch('/api/admin/users'),
+        fetch('/api/admin/users/maintenance-status').catch(() => null),
+      ]);
+      if (usersRes.ok) {
+        const data = await usersRes.json();
         setUsers(data.users || []);
+      }
+      if (settingsRes?.ok) {
+        const data = await settingsRes.json();
+        setMaintenanceUsers(new Set((data.maintenanceUserIds || []).map(String)));
       }
     } catch (error) {
       toast.error('Failed to fetch users');
@@ -324,6 +354,18 @@ export default function AdminUsersPage() {
                       <ActionBtn icon={TrashIcon} onClick={() => handleDelete(user._id)} color="text-red-600 hover:bg-red-50" title="Delete" />
                       {user.status === 'blocked' ? <ActionBtn icon={CheckIcon} onClick={() => handleUnblock(user._id)} color="text-green-600 hover:bg-green-50" title="Unblock" /> : <ActionBtn icon={NoSymbolIcon} onClick={() => handleBlock(user._id)} color="text-orange-600 hover:bg-orange-50" title="Block" />}
                       {user.status === 'pending' && <><ActionBtn icon={CheckCircleIcon} onClick={() => handleApprove(user._id)} color="text-green-600 hover:bg-green-50" title="Approve" /><ActionBtn icon={XCircleIcon} onClick={() => handleReject(user._id)} color="text-red-600 hover:bg-red-50" title="Reject" /></>}
+                      {/* Maintenance toggle */}
+                      <button
+                        onClick={() => handleToggleMaintenance(user._id, !maintenanceUsers.has(user._id.toString()))}
+                        title={maintenanceUsers.has(user._id.toString()) ? 'Disable Maintenance Mode' : 'Enable Maintenance Mode'}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          maintenanceUsers.has(user._id.toString())
+                            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                            : 'text-gray-400 hover:bg-amber-50 hover:text-amber-600'
+                        }`}
+                      >
+                        <WrenchScrewdriverIcon className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>

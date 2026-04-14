@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/layout/Sidebar';
+import MaintenancePopup from '@/components/MaintenancePopup';
 
 export default function UserLayout({ children }) {
   const [user, setUser] = useState(null);
@@ -30,6 +31,7 @@ export default function UserLayout({ children }) {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <MaintenancePopup />
       <Sidebar userRole={user.role} userName={user.name} userEmail={user.email} />
       <main className="flex-1 overflow-y-auto">
         {/* pt-14 = mobile topbar height, pb-20 = mobile bottom nav height */}

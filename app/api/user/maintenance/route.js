@@ -1,0 +1,30 @@
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
+import connectDB from '@/lib/mongodb';
+import UserSettings from '@/models/UserSettings';
+
+const DEFAULT_MESSAGE = `We would like to inform you that due to an internal system update, our platform is currently under maintenance.
+
+During this period, certain services may be temporarily unavailable. We request you to kindly hold your transactions until the maintenance is completed.
+
+Our team is actively working to restore all services at the earliest.`;
+
+export async function GET() {
+  try {
+    const token = cookies().get('token')?.value;
+    if (!token) return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    await connectDB();
+
+    const settings = await UserSettings.findOne({ userId: decoded.userId }).lean();
+
+    return NextResponse.json({
+      maintenanceMode: settings?.maintenanceMode === true,
+      maintenanceMessage: settings?.maintenanceMessage || DEFAULT_MESSAGE,
+    });
+  } catch {
+    return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
+  }
+}
