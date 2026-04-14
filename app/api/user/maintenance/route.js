@@ -10,14 +10,6 @@ During this period, certain services may be temporarily unavailable. We request 
 
 Our team is actively working to restore all services at the earliest.`;
 
-async function getCollection() {
-  await connectDB();
-  if (mongoose.connection.readyState !== 1) {
-    await new Promise(resolve => mongoose.connection.once('connected', resolve));
-  }
-  return mongoose.connection.db.collection('usersettings');
-}
-
 export async function GET() {
   try {
     const token = cookies().get('token')?.value;
@@ -30,7 +22,8 @@ export async function GET() {
       return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
     }
 
-    const col = await getCollection();
+    await connectDB();
+    const col = mongoose.connection.db.collection('usersettings');
     const userObjectId = new mongoose.Types.ObjectId(decoded.userId);
     const settings = await col.findOne({ userId: userObjectId });
 
@@ -39,7 +32,7 @@ export async function GET() {
       maintenanceMessage: settings?.maintenanceMessage || DEFAULT_MESSAGE,
     });
   } catch (err) {
-    console.error('[user/maintenance/GET]', err);
+    console.error('[user/maintenance]', err.message);
     return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
   }
 }

@@ -10,15 +10,6 @@ During this period, certain services may be temporarily unavailable. We request 
 
 Our team is actively working to restore all services at the earliest.`;
 
-async function getCollection() {
-  await connectDB();
-  // Wait until connection is fully ready
-  if (mongoose.connection.readyState !== 1) {
-    await new Promise(resolve => mongoose.connection.once('connected', resolve));
-  }
-  return mongoose.connection.db.collection('usersettings');
-}
-
 export async function POST(request) {
   try {
     const token = cookies().get('token')?.value;
@@ -31,7 +22,8 @@ export async function POST(request) {
     const { userId, enabled, message } = await request.json();
     if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 });
 
-    const col = await getCollection();
+    await connectDB();
+    const col = mongoose.connection.db.collection('usersettings');
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
     await col.updateOne(
@@ -52,7 +44,7 @@ export async function POST(request) {
       message: `Maintenance mode ${enabled ? 'enabled' : 'disabled'} for user`,
     });
   } catch (err) {
-    console.error('[maintenance/POST]', err);
+    console.error('[maintenance/POST]', err.message);
     return NextResponse.json({ error: err.message || 'Failed' }, { status: 500 });
   }
 }
