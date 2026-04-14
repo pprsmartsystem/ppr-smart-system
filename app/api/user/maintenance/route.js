@@ -1,9 +1,12 @@
-// v4 - force redeploy
+// v5 - force-dynamic to prevent Vercel caching
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import connectDB from '@/lib/mongodb';
 import mongoose from 'mongoose';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const DEFAULT_MESSAGE = `We would like to inform you that due to an internal system update, our platform is currently under maintenance.
 
@@ -13,14 +16,24 @@ Our team is actively working to restore all services at the earliest.`;
 
 export async function GET() {
   try {
-    const token = cookies().get('token')?.value;
-    if (!token) return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
+    const cookieStore = cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json(
+        { maintenanceMode: false, maintenanceMessage: '' },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+      );
+    }
 
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch {
-      return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
+      return NextResponse.json(
+        { maintenanceMode: false, maintenanceMessage: '' },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+      );
     }
 
     await connectDB();
@@ -28,12 +41,20 @@ export async function GET() {
     const userObjectId = new mongoose.Types.ObjectId(decoded.userId);
     const settings = await col.findOne({ userId: userObjectId });
 
-    return NextResponse.json({
-      maintenanceMode: settings?.maintenanceMode === true,
-      maintenanceMessage: settings?.maintenanceMessage || DEFAULT_MESSAGE,
-    });
+    console.log('[maintenance] userId:', decoded.userId, 'maintenanceMode:', settings?.maintenanceMode);
+
+    return NextResponse.json(
+      {
+        maintenanceMode: settings?.maintenanceMode === true,
+        maintenanceMessage: settings?.maintenanceMessage || DEFAULT_MESSAGE,
+      },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (err) {
     console.error('[user/maintenance]', err.message);
-    return NextResponse.json({ maintenanceMode: false, maintenanceMessage: '' });
+    return NextResponse.json(
+      { maintenanceMode: false, maintenanceMessage: '' },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   }
 }

@@ -4,6 +4,8 @@ import { verifyToken } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import mongoose from 'mongoose';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const token = cookies().get('token')?.value;
