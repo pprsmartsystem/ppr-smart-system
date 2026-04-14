@@ -90,6 +90,17 @@ export default function MaintenancePopup() {
                 contact@pprsmartsystem.com
               </a>
             </p>
+
+            {/* Logout button */}
+            <button
+              onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+              }}
+              className="mt-5 w-full py-3 rounded-xl border-2 border-gray-200 text-gray-600 text-sm font-semibold hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all"
+            >
+              Sign Out
+            </button>
           </div>
 
           {/* Bottom bar */}
