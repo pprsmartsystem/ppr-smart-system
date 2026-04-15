@@ -4,6 +4,8 @@ import { verifyToken } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import Transaction from '@/models/Transaction';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const token = cookies().get('token')?.value;
@@ -15,17 +17,11 @@ export async function GET() {
     }
 
     await connectDB();
-    
-    const notifications = await Transaction.find({
-      $or: [
-        { type: 'debit', description: { $regex: 'Settlement initiated', $options: 'i' } },
-        { type: 'debit', description: { $regex: 'Card redeemed', $options: 'i' } },
-        { type: 'payment_request', status: 'pending' }
-      ]
-    })
-    .populate('userId', 'name email')
-    .sort({ createdAt: -1 })
-    .limit(50);
+
+    const notifications = await Transaction.find({ type: 'payment_request' })
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(100);
 
     return NextResponse.json({ notifications });
   } catch (error) {
