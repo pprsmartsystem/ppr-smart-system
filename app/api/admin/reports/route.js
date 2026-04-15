@@ -6,12 +6,12 @@ import User from '@/models/User';
 import Transaction from '@/models/Transaction';
 import Settlement from '@/models/Settlement';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     const token = cookies().get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const decoded = verifyToken(token);
     if (!decoded || decoded.role !== 'admin') {
@@ -21,65 +21,66 @@ export async function GET(request) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const type = searchParams.get('type');
+    const startDate  = searchParams.get('startDate');
+    const endDate    = searchParams.get('endDate');
+    const type       = searchParams.get('type');
 
-    // Build user filter
+    // User filter
     let userFilter = { role: { $in: ['user', 'distributor'] } };
-    if (type && type !== 'all') {
-      userFilter.role = type;
-    }
+    if (type && type !== 'all') userFilter.role = type;
+    const users = await User.find(userFilter).select('_id name email role').lean();
 
-    const users = await User.find(userFilter).select('_id name email role');
-
-    // Build date filter with IST offset (+5:30)
+    // Date filter for Total Redeem only (IST → UTC)
     const IST_OFFSET = 5.5 * 60 * 60 * 1000;
     let dateFilter = {};
     if (startDate || endDate) {
       dateFilter.createdAt = {};
       if (startDate) {
-        const start = new Date(startDate);
-        start.setTime(start.getTime() - IST_OFFSET); // IST midnight -> UTC
-        dateFilter.createdAt.$gte = start;
+        const s = new Date(startDate);
+        s.setTime(s.getTime() - IST_OFFSET);
+        dateFilter.createdAt.$gte = s;
       }
       if (endDate) {
-        const end = new Date(endDate);
-        end.setTime(end.getTime() - IST_OFFSET + (24 * 60 * 60 * 1000) - 1); // IST end of day -> UTC
-        dateFilter.createdAt.$lte = end;
+        const e = new Date(endDate);
+        e.setTime(e.getTime() - IST_OFFSET + 24 * 60 * 60 * 1000 - 1);
+        dateFilter.createdAt.$lte = e;
       }
     }
 
     const reports = await Promise.all(
       users.map(async (user) => {
-        const baseFilter = { userId: user._id, ...dateFilter };
+        const uid = user._id;
 
-        // Total redeem: debit transactions from gateway
+        // Total Redeem: date-filtered — card redemption / gateway spending
         const redeemTxns = await Transaction.find({
-          ...baseFilter,
+          userId: uid,
           type: 'debit',
-          description: { $regex: 'redeem|gateway', $options: 'i' },
-        });
-        const totalRedeem = redeemTxns.reduce((sum, t) => sum + t.amount, 0);
+          description: { $regex: 'redeem|gateway|card redeemed', $options: 'i' },
+          ...dateFilter,
+        }).lean();
+        const totalRedeem = redeemTxns.reduce((s, t) => s + t.amount, 0);
 
-        // Settlement initiated: debit transactions T+1
-        const initiatedTxns = await Transaction.find({
-          ...baseFilter,
-          type: 'debit',
-          description: { $regex: 'settlement initiated', $options: 'i' },
-        });
-        const settlementInitiated = initiatedTxns.reduce((sum, t) => sum + t.amount, 0);
+        // Settlement Initiated: date-filtered — T+1 bank settlements initiated by user
+        const initiatedSettlements = await Settlement.find({
+          userId: uid,
+          type: 'manual',
+          source: 'user',
+          ...dateFilter,
+        }).lean();
+        const settlementInitiated = initiatedSettlements.reduce((s, t) => s + (t.settlementAmount || 0), 0);
 
-        // Pending settlements from Settlement model
+        // Pending Settlement: date-filtered — auto settlements pending wallet credit
         const pendingSettlements = await Settlement.find({
-          userId: user._id,
+          userId: uid,
+          type: 'auto',
+          source: 'admin',
           status: 'pending',
           ...dateFilter,
-        });
-        const pendingSettlement = pendingSettlements.reduce((sum, s) => sum + s.settlementAmount, 0);
+        }).lean();
+        const pendingSettlement = pendingSettlements.reduce((s, t) => s + (t.settlementAmount || 0), 0);
 
         return {
-          userId: user._id,
+          userId: uid,
           userName: user.name,
           userEmail: user.email,
           userRole: user.role,
@@ -90,8 +91,10 @@ export async function GET(request) {
       })
     );
 
-    // Filter out users with no activity
-    const activeReports = reports.filter(r => r.totalRedeem > 0 || r.settlementInitiated > 0 || r.pendingSettlement > 0);
+    // Only show users with any activity
+    const activeReports = reports.filter(
+      r => r.totalRedeem > 0 || r.settlementInitiated > 0 || r.pendingSettlement > 0
+    );
 
     return NextResponse.json({ reports: activeReports });
   } catch (error) {
