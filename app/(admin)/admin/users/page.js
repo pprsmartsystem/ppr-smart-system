@@ -374,15 +374,7 @@ export default function AdminUsersPage() {
                       {user.status === 'pending' && <><ActionBtn icon={CheckCircleIcon} onClick={() => handleApprove(user._id)} color="text-green-600 hover:bg-green-50" title="Approve" /><ActionBtn icon={XCircleIcon} onClick={() => handleReject(user._id)} color="text-red-600 hover:bg-red-50" title="Reject" /></>}
                       {/* Maintenance toggle */}
                       <button
-                        onClick={() => {
-                          if (maintenanceUsers.has(user._id.toString())) {
-                            handleToggleMaintenance(user._id, false);
-                          } else {
-                            setMaintenanceTarget(user);
-                            setMaintenanceMessage(MAINTENANCE_PRESETS[0].text);
-                            setShowMaintenanceModal(true);
-                          }
-                        }}
+                        onClick={() => handleToggleMaintenance(user._id, !maintenanceUsers.has(user._id.toString()))}
                         title={maintenanceUsers.has(user._id.toString()) ? 'Disable Maintenance Mode' : 'Enable Maintenance Mode'}
                         className={`p-1.5 rounded-lg transition-colors ${
                           maintenanceUsers.has(user._id.toString())
