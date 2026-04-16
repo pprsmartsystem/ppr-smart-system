@@ -365,6 +365,16 @@ export default function AdminUsersPage() {
                   <td className="py-3 px-4">
                     <div className="flex justify-end gap-1">
                       <ActionBtn icon={() => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>} onClick={() => { setSelectedUser(user); setShowPasswordModal(true); setNewPassword(''); setGeneratedPassword(''); }} color="text-yellow-600 hover:bg-yellow-50" title="Reset Password" />
+                      {/* View User Panel */}
+                      <a
+                        href={`/api/admin/users/impersonate?userId=${user._id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="View User Panel"
+                        className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors inline-flex items-center"
+                      >
+                        <EyeIcon className="w-4 h-4" />
+                      </a>
                       <ActionBtn icon={PlusCircleIcon} onClick={() => { setSelectedUser(user); setShowBalanceModal(true); }} color="text-blue-600 hover:bg-blue-50" title="Add Balance" />
                       <ActionBtn icon={MinusCircleIcon} onClick={() => { setSelectedUser(user); setShowDeductModal(true); }} color="text-red-500 hover:bg-red-50" title="Deduct Balance" />
                       <ActionBtn icon={EyeIcon} onClick={() => handleViewCards(user)} color="text-purple-600 hover:bg-purple-50" title="View Cards" />
