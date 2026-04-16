@@ -10,7 +10,9 @@ const DEFAULT_MESSAGE = `We would like to inform you that due to an internal sys
 
 During this period, certain services may be temporarily unavailable. We request you to kindly hold your transactions until the maintenance is completed.
 
-Our team is actively working to restore all services at the earliest.`;
+Our team is actively working to restore all services at the earliest.
+
+We would like to inform you that our platform will undergo a scheduled internal system update on 21st April 2026.`;
 
 export async function POST(request) {
   try {

@@ -30,6 +30,20 @@ export default function AdminUsersPage() {
   const [newPassword, setNewPassword] = useState('');
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [maintenanceUsers, setMaintenanceUsers] = useState(new Set());
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [maintenanceTarget, setMaintenanceTarget] = useState(null);
+  const [maintenanceMessage, setMaintenanceMessage] = useState('');
+
+  const MAINTENANCE_PRESETS = [
+    {
+      label: 'System Update (Default)',
+      text: 'We would like to inform you that due to an internal system update, our platform is currently under maintenance.\n\nDuring this period, certain services may be temporarily unavailable. We request you to kindly hold your transactions until the maintenance is completed.\n\nOur team is actively working to restore all services at the earliest.',
+    },
+    {
+      label: 'Scheduled Update — 21st April 2026',
+      text: 'We would like to inform you that our platform will undergo a scheduled internal system update on 21st April 2026.\n\nDuring this period, certain services may be temporarily unavailable. We request you to kindly hold your transactions until the update is completed.\n\nOur team is actively working to restore all services at the earliest.',
+    },
+  ];
 
   useEffect(() => {
     fetchUsers();
@@ -43,7 +57,7 @@ export default function AdminUsersPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ userId: id, enabled }),
+        body: JSON.stringify({ userId: id, enabled, message: enabled ? maintenanceMessage : '' }),
       });
       if (res.ok) {
         toast.success(`Maintenance mode ${enabled ? 'enabled 🔧' : 'disabled ✓'} for user`);
@@ -52,6 +66,9 @@ export default function AdminUsersPage() {
           enabled ? next.add(id) : next.delete(id);
           return next;
         });
+        setShowMaintenanceModal(false);
+        setMaintenanceTarget(null);
+        setMaintenanceMessage('');
       } else {
         const d = await res.json();
         toast.error(d.error || 'Failed to update maintenance mode');
@@ -357,7 +374,15 @@ export default function AdminUsersPage() {
                       {user.status === 'pending' && <><ActionBtn icon={CheckCircleIcon} onClick={() => handleApprove(user._id)} color="text-green-600 hover:bg-green-50" title="Approve" /><ActionBtn icon={XCircleIcon} onClick={() => handleReject(user._id)} color="text-red-600 hover:bg-red-50" title="Reject" /></>}
                       {/* Maintenance toggle */}
                       <button
-                        onClick={() => handleToggleMaintenance(user._id, !maintenanceUsers.has(user._id.toString()))}
+                        onClick={() => {
+                          if (maintenanceUsers.has(user._id.toString())) {
+                            handleToggleMaintenance(user._id, false);
+                          } else {
+                            setMaintenanceTarget(user);
+                            setMaintenanceMessage(MAINTENANCE_PRESETS[0].text);
+                            setShowMaintenanceModal(true);
+                          }
+                        }}
                         title={maintenanceUsers.has(user._id.toString()) ? 'Disable Maintenance Mode' : 'Enable Maintenance Mode'}
                         className={`p-1.5 rounded-lg transition-colors ${
                           maintenanceUsers.has(user._id.toString())
