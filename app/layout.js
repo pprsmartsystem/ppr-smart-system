@@ -2,6 +2,8 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import BroadcastBar from '@/components/BroadcastBar';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -53,19 +55,15 @@ export default function RootLayout({ children }) {
                 borderRadius: '12px',
               },
               success: {
-                iconTheme: {
-                  primary: '#10B981',
-                  secondary: '#fff',
-                },
+                iconTheme: { primary: '#10B981', secondary: '#fff' },
               },
               error: {
-                iconTheme: {
-                  primary: '#EF4444',
-                  secondary: '#fff',
-                },
+                iconTheme: { primary: '#EF4444', secondary: '#fff' },
               },
             }}
           />
+          <Analytics />
+          <SpeedInsights />
         </div>
       </body>
     </html>
