@@ -4,5 +4,19 @@
       "path": "/api/cron/settle",
       "schedule": "0 5 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "app/api/**": {
+      "maxDuration": 60
+    },
+    "app/api/cron/**": {
+      "maxDuration": 300
+    },
+    "app/api/admin/transactions/**": {
+      "maxDuration": 60
+    },
+    "app/api/admin/reports/**": {
+      "maxDuration": 60
+    }
+  }
 }
