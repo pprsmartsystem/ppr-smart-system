@@ -6,6 +6,8 @@ import Settlement from '@/models/Settlement';
 import Transaction from '@/models/Transaction';
 import User from '@/models/User';
 import UserSettings from '@/models/UserSettings';
+import { sendMail } from '@/lib/mailer';
+import { settlementProcessedEmail } from '@/lib/emails/settlementProcessed';
 
 export async function GET() {
   try {
@@ -53,14 +55,32 @@ export async function POST(request) {
       settlement.processedAt = new Date();
       await settlement.save();
 
+      const reference = `SETTLE${Date.now()}`;
       await Transaction.create({
         userId: settlement.userId,
         type: 'credit',
         amount: settlement.settlementAmount,
         status: 'completed',
         description: 'Settlement',
-        reference: `SETTLE${Date.now()}`,
+        reference,
       });
+
+      // Send email
+      try {
+        if (user.email) {
+          await sendMail({
+            to: user.email,
+            subject: 'Settlement Credited — PPR Smart System',
+            html: settlementProcessedEmail({
+              name: user.name,
+              amount: settlement.settlementAmount,
+              newBalance: user.walletBalance,
+              reference,
+              date: new Date(),
+            }),
+          });
+        }
+      } catch (e) { console.error('[settle-mail]', e.message); }
 
       return NextResponse.json({ success: true, message: 'Settlement processed' });
     }
@@ -79,14 +99,33 @@ export async function POST(request) {
         settlement.processedAt = new Date();
         await settlement.save();
 
+        const ref = `SETTLE${Date.now()}-${count}`;
         await Transaction.create({
           userId: settlement.userId,
           type: 'credit',
           amount: settlement.settlementAmount,
           status: 'completed',
           description: 'Settlement',
-          reference: `SETTLE${Date.now()}-${count}`,
+          reference: ref,
         });
+
+        // Send email
+        try {
+          if (user.email) {
+            await sendMail({
+              to: user.email,
+              subject: 'Settlement Credited — PPR Smart System',
+              html: settlementProcessedEmail({
+                name: user.name,
+                amount: settlement.settlementAmount,
+                newBalance: user.walletBalance,
+                reference: ref,
+                date: new Date(),
+              }),
+            });
+          }
+        } catch (e) { console.error('[bulk-settle-mail]', e.message); }
+
         count++;
       }
 

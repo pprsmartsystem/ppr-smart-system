@@ -5,6 +5,8 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import KYC from '@/models/KYC';
 import Settlement from '@/models/Settlement';
+import { sendMail } from '@/lib/mailer';
+import { settlementInitiatedEmail } from '@/lib/emails/settlementInitiated';
 
 const MIN_SETTLEMENT = 10000;
 
@@ -75,6 +77,23 @@ export async function POST(request) {
       status: 'pending',
       scheduledFor: settlementDate,
     });
+
+    // Send email notification
+    try {
+      await sendMail({
+        to: user.email,
+        subject: 'Settlement Initiated — PPR Smart System',
+        html: settlementInitiatedEmail({
+          name: user.name,
+          amount,
+          settlementDate,
+          reference: `SETTLE-${Date.now()}`,
+          walletBalance: user.walletBalance,
+        }),
+      });
+    } catch (mailErr) {
+      console.error('[settlement-mail]', mailErr.message);
+    }
 
     return NextResponse.json({
       success: true,

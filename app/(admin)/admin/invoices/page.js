@@ -109,7 +109,7 @@ export default function InvoicesPage() {
       Lokhra, Lalganesh<br>
       Guwahati, Assam – 781034<br>
       <strong>GSTIN:</strong> 18AYFPD8046C1ZN<br>
-      <strong>Email:</strong> contact@pprsmartsystem.com
+      <strong>Email:</strong> support@pprsmartsystem.com
     </div>
   </div>
 
@@ -209,7 +209,7 @@ export default function InvoicesPage() {
 
   <div class="footer" style="text-align: center; color: #666; font-size: 12px;">
     <p>Thank you for your business!</p>
-    <p>For any queries, contact us at contact@pprsmartsystem.com | +91 9403893296</p>
+    <p>For any queries, contact us at support@pprsmartsystem.com | +91 9403893296</p>
   </div>
 </body>
 </html>

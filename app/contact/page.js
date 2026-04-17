@@ -59,7 +59,7 @@ export default function ContactPage() {
               <h3 className="font-bold text-gray-900 mb-5">Get In Touch</h3>
               <div className="space-y-4">
                 {[
-                  { icon: EnvelopeIcon, label: 'Email', value: 'contact@pprsmartsystem.com', href: 'mailto:contact@pprsmartsystem.com', color: 'bg-indigo-50 text-indigo-600' },
+                  { icon: EnvelopeIcon, label: 'Email', value: 'support@pprsmartsystem.com', href: 'mailto:support@pprsmartsystem.com', color: 'bg-indigo-50 text-indigo-600' },
                   { icon: PhoneIcon, label: 'Phone', value: '+91 9403893296', href: 'tel:+919403893296', color: 'bg-green-50 text-green-600' },
                   { icon: ClockIcon, label: 'Business Hours', value: 'Mon–Fri, 9 AM – 6 PM IST', color: 'bg-amber-50 text-amber-600' },
                   { icon: MapPinIcon, label: 'Location', value: 'India', color: 'bg-pink-50 text-pink-600' },

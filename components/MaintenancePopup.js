@@ -105,8 +105,8 @@ export default function MaintenancePopup() {
               {/* Contact */}
               <p className="text-center text-xs text-gray-400">
                 Urgent queries?{' '}
-                <a href="mailto:contact@pprsmartsystem.com" className="text-indigo-500 font-semibold hover:underline">
-                  contact@pprsmartsystem.com
+                <a href="mailto:support@pprsmartsystem.com" className="text-indigo-500 font-semibold hover:underline">
+                  support@pprsmartsystem.com
                 </a>
               </p>
 

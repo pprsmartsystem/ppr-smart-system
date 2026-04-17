@@ -43,7 +43,7 @@ const SECTIONS = [
   },
   {
     title: 'Contact for Privacy',
-    content: 'For privacy-related questions, data requests, or concerns, contact us at: contact@pprsmartsystem.com. We will respond within 30 days.',
+    content: 'For privacy-related questions, data requests, or concerns, contact us at: support@pprsmartsystem.com. We will respond within 30 days.',
   },
 ];
 

@@ -424,7 +424,7 @@ export default function HomePage() {
             <div>
               <h3 className="font-semibold text-sm mb-4 text-gray-300 uppercase tracking-wider">Support</h3>
               <ul className="space-y-2.5">
-                <li><a href="mailto:contact@pprsmartsystem.com" className="text-gray-400 hover:text-white text-sm transition-colors">contact@pprsmartsystem.com</a></li>
+                <li><a href="mailto:support@pprsmartsystem.com" className="text-gray-400 hover:text-white text-sm transition-colors">support@pprsmartsystem.com</a></li>
                 <li><span className="text-gray-400 text-sm">+91 9403893296</span></li>
               </ul>
             </div>
