@@ -1,325 +1,249 @@
 # PPR Smart System
 
-A comprehensive **Digital Gifting, Corporate Rewards & Virtual Card Management Platform** built with Next.js 14, MongoDB, and modern web technologies.
+A comprehensive **Digital Gifting, Corporate Rewards, Virtual Card Management & Settlement Platform** built with Next.js 14, MongoDB, and modern web technologies.
 
-![PPR Smart System](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
+**Live:** [www.pprsmart.com](https://www.pprsmart.com)
+
+---
+
 ## 🚀 Features
 
-### 🔐 Multi-Role Authentication System
-- **Admin**: Full system management and analytics
-- **Corporate**: Employee management and bulk operations
-- **Employee**: Allowance management and corporate benefits
-- **User**: Personal wallet and gift voucher management
+### 🔐 Multi-Role Authentication
+- **Admin** — Full platform control, analytics, KYC, settlements, user management
+- **Distributor** — User management, wallet recharge, reports (with hold/unhold support)
+- **Corporate** — Employee management, bulk allowances, corporate rewards
+- **Employee** — Corporate benefits, allowances, vouchers
+- **User** — Personal wallet, virtual cards, T+1 bank settlements
 
 ### 💳 Virtual Card Management
-- Generate unique 16-digit virtual cards
+- Generate unique 16-digit virtual cards with PIN protection
 - Real-time freeze/unfreeze functionality
 - Spending limits and balance management
-- Auto-expiry with 3-year validity
-- Apple Wallet-style card design
+- 3-year auto-expiry
+- Animated card creation experience (30s generation flow)
+- Admin can view all user cards
 
-### 🎁 Digital Gifting Platform
-- Brand marketplace with popular retailers
-- Scheduled voucher delivery
-- Personalized greeting messages
-- Corporate bulk gifting
+### 🏦 T+1 Settlement System
+- User-initiated bank settlements (minimum ₹10,000)
+- Next working day credit to registered bank account
+- Excludes Sundays, 2nd & 4th Saturdays, and Indian bank holidays
+- Admin approval workflow with pending/processed tracking
+- Auto-settlement cron job at 10:30 AM IST daily (Vercel Cron)
 
-### 📊 Advanced Analytics
-- Real-time dashboard metrics
-- Transaction monitoring
-- Revenue tracking
-- User behavior insights
-- Exportable reports (CSV)
+### 💰 Spend/Redeem Settlement
+- Auto-generated settlements when users spend via gateway
+- 1.77% settlement rate deduction
+- Admin bulk process with one click
+- Full settlement history and analytics
 
-### 🏢 Corporate Features
-- Employee onboarding and management
-- Bulk wallet credit distribution
-- Allowance management system
-- Corporate reporting and analytics
+### 📧 SMTP Email Notifications
+- **Wallet Loading** — email to distributor when admin credits wallet
+- **Settlement Initiated** — email to user on T+1 bank settlement request
+- **Settlement Credited** — email to user when admin processes settlement
+- Banking-style HTML email templates
+- Google Workspace SMTP (support@pprsmartsystem.com)
+
+### 🔧 Maintenance Mode
+- Admin can enable per-user maintenance popup
+- Non-closable full-screen overlay with custom message
+- Auto-polls every 15 seconds — disappears when admin disables
+- Scheduled update announcements support
+
+### 🏢 Distributor Management
+- Create and manage distributor accounts
+- Add/deduct wallet balance
+- Temporary hold/unhold accounts
+- Distributor stats with date filtering
+- Top users by spend report
+
+### 📊 Analytics & Reports
+- Date-wise Redeem & Settlement reports
+- Total Redeem (date-filtered)
+- Settlement Initiated — T+1 bank settlements
+- Pending Settlement — Spend/Redeem pending credits
+- CSV export
+
+### 🔍 KYC Verification
+- Document upload via Cloudinary (Aadhaar, PAN, Bank docs)
+- Admin inline document viewer with image thumbnails
+- Full-screen document preview for images and PDFs
+- Approve / Reject / Re-KYC workflow
+
+### 👁 Admin Impersonation
+- Admin can view any user's dashboard via eye icon
+- 1-hour temporary session token
+- Opens in new tab without affecting admin session
+
+### 🔔 Advanced Notifications
+- Real-time payment request approval/rejection
+- Auto-refresh every 15 seconds
+- Stats: Total, Pending, Approved, Rejected
+- Pending amount banner
+
+---
 
 ## 🛠 Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), React 18, Tailwind CSS
-- **Backend**: Next.js API Routes, Node.js
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT with HTTP-only cookies
-- **Security**: bcrypt password hashing, input validation
-- **UI/UX**: Framer Motion animations, Heroicons
-- **Charts**: Recharts for data visualization
-- **Deployment**: Vercel-ready configuration
+| Layer | Technology |
+|---|---|
+| **Frontend** | Next.js 14 (App Router), React 18, Tailwind CSS |
+| **Animations** | Framer Motion |
+| **Backend** | Next.js API Routes, Node.js |
+| **Database** | MongoDB Atlas with Mongoose ODM |
+| **Authentication** | JWT with HTTP-only cookies |
+| **Security** | bcrypt, RBAC, KYC verification |
+| **Email** | Nodemailer + Google Workspace SMTP |
+| **File Upload** | Cloudinary |
+| **Charts** | Recharts |
+| **Deployment** | Vercel Pro |
+| **Analytics** | Vercel Analytics + Speed Insights |
+| **Cron Jobs** | Vercel Cron (T+1 auto-settlement) |
+
+---
 
 ## 📁 Project Structure
 
 ```
 PPR SMART SYSTEM/
-├── app/                          # Next.js 14 App Router
-│   ├── (auth)/                   # Authentication routes
-│   │   ├── login/
-│   │   └── register/
-│   ├── (admin)/                  # Admin dashboard
-│   ├── (corporate)/              # Corporate dashboard
-│   ├── (employee)/               # Employee dashboard
-│   ├── (user)/                   # User dashboard
-│   ├── api/                      # API routes
-│   │   ├── auth/                 # Authentication endpoints
-│   │   ├── admin/                # Admin API routes
-│   │   ├── user/                 # User API routes
-│   │   └── corporate/            # Corporate API routes
-│   ├── globals.css               # Global styles
-│   ├── layout.js                 # Root layout
-│   └── page.js                   # Landing page
-├── components/                   # Reusable components
-│   ├── ui/                       # UI components
-│   ├── layout/                   # Layout components
-│   ├── cards/                    # Card components
-│   └── charts/                   # Chart components
-├── lib/                          # Utility libraries
-│   ├── mongodb.js                # Database connection
-│   └── auth.js                   # Authentication utilities
-├── models/                       # Mongoose models
+├── app/
+│   ├── (admin)/admin/          # Admin dashboard & all admin pages
+│   ├── (corporate)/corporate/  # Corporate dashboard
+│   ├── (distributor)/          # Distributor dashboard
+│   ├── (employee)/employee/    # Employee dashboard
+│   ├── (user)/user/            # User dashboard
+│   ├── (auth)/                 # Login & Register
+│   ├── api/                    # All API routes
+│   │   ├── admin/              # Admin APIs
+│   │   ├── user/               # User APIs
+│   │   ├── corporate/          # Corporate APIs
+│   │   ├── distributor/        # Distributor APIs
+│   │   ├── auth/               # Auth APIs
+│   │   └── cron/settle/        # Auto-settlement cron
+│   └── page.js                 # Landing page
+├── components/
+│   ├── layout/Sidebar.js       # Responsive sidebar + mobile bottom nav
+│   ├── ui/AdminComponents.js   # Shared admin UI components
+│   ├── MaintenancePopup.js     # Per-user maintenance overlay
+│   └── BroadcastBar.js         # Site-wide broadcast banner
+├── lib/
+│   ├── mongodb.js              # DB connection
+│   ├── auth.js                 # JWT utilities
+│   ├── mailer.js               # SMTP mailer
+│   └── emails/                 # Email templates
+│       ├── walletLoading.js
+│       ├── settlementInitiated.js
+│       └── settlementProcessed.js
+├── models/                     # Mongoose models
 │   ├── User.js
 │   ├── Card.js
 │   ├── Transaction.js
-│   ├── Corporate.js
-│   └── Brand.js
-├── utils/                        # Utility functions
-│   └── cardUtils.js              # Card-related utilities
-├── middleware.js                 # Next.js middleware
-├── scripts/                      # Database scripts
-│   └── seed.js                   # Database seeding
-└── README.md
+│   ├── Settlement.js
+│   ├── KYC.js
+│   ├── UserSettings.js
+│   └── ...
+├── utils/
+│   ├── cardUtils.js
+│   ├── walletUtils.js
+│   └── bankingDays.js          # Indian banking day calculator
+├── vercel.json                 # Cron + function config
+└── .env.local                  # Environment variables
 ```
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+ installed
-- MongoDB Atlas account (or local MongoDB)
-- Git installed
-
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd "PPR SMART SYSTEM"
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Environment Setup
-
-Create a `.env.local` file in the root directory:
-
-```env
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/ppr-smart-system
-JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
-NEXT_PUBLIC_APP_NAME=PPR SMART SYSTEM
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### 4. Database Setup
-
-Seed the database with test data:
-
-```bash
-npm run seed
-```
-
-This creates:
-- 1 Admin account
-- 1 Corporate account with 5 employees
-- 3 Regular users
-- Sample virtual cards and transactions
-- Brand marketplace data
-
-### 5. Run Development Server
-
-```bash
-npm run dev
-```
-
-Visit [http://localhost:3000](http://localhost:3000) to see the application.
-
-## 👥 Test Accounts
-
-After running the seed script, use these accounts to test different roles:
-
-| Role | Email | Password | Description |
-|------|-------|----------|-------------|
-| **Admin** | admin@ppr.com | admin123 | Full system access |
-| **Corporate** | corporate@ppr.com | corporate123 | Company management |
-| **User** | user@ppr.com | user123 | Personal account |
-| **Employee** | alice@techcorp.com | employee123 | Corporate employee |
-
-## 🚀 Deployment
-
-### Deploy to Vercel (Recommended)
-
-1. **Push to GitHub**:
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   git push origin main
-   ```
-
-2. **Deploy to Vercel**:
-   - Visit [vercel.com](https://vercel.com)
-   - Import your GitHub repository
-   - Add environment variables in Vercel dashboard
-   - Deploy automatically
-
-3. **Environment Variables in Vercel**:
-   ```
-   MONGODB_URI=your-mongodb-atlas-connection-string
-   JWT_SECRET=your-jwt-secret-key
-   NEXT_PUBLIC_APP_NAME=PPR SMART SYSTEM
-   NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
-   ```
-
-### MongoDB Atlas Setup
-
-1. Create a MongoDB Atlas account
-2. Create a new cluster
-3. Create a database user
-4. Whitelist your IP address (or use 0.0.0.0/0 for all IPs)
-5. Get your connection string
-6. Replace `<username>`, `<password>`, and `<cluster>` in the connection string
-
-## 🔧 Development
-
-### Available Scripts
-
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run seed         # Seed database with test data
-```
-
-### Adding New Features
-
-1. **API Routes**: Add new endpoints in `app/api/`
-2. **Database Models**: Create new models in `models/`
-3. **Components**: Add reusable components in `components/`
-4. **Pages**: Create new pages in appropriate role directories
-5. **Utilities**: Add helper functions in `utils/`
-
-## 🎨 UI/UX Features
-
-### Design System
-- **Premium fintech aesthetic** inspired by Stripe, Notion, and Apple
-- **Glassmorphism effects** with backdrop blur
-- **Smooth animations** using Framer Motion
-- **Responsive design** for all screen sizes
-- **Dark mode support** (optional)
-
-### Virtual Card Design
-- **3D gradient backgrounds** with realistic card appearance
-- **Animated flip effects** to show CVV
-- **Hover glow animations**
-- **Masked card numbers** for security
-- **Status indicators** (active, frozen, expired)
-
-### Interactive Elements
-- **Smooth page transitions**
-- **Loading skeletons**
-- **Toast notifications**
-- **Animated statistics**
-- **Hover effects** and micro-interactions
-
-## 🔒 Security Features
-
-- **JWT Authentication** with HTTP-only cookies
-- **Password hashing** using bcrypt with salt rounds
-- **Role-based access control** (RBAC)
-- **Input validation** and sanitization
-- **MongoDB injection prevention**
-- **Secure middleware** for route protection
-- **CORS configuration** for API security
-
-## 📊 Database Schema
-
-### User Model
-```javascript
-{
-  name: String,
-  email: String (unique),
-  password: String (hashed),
-  role: Enum ['admin', 'corporate', 'employee', 'user'],
-  status: Enum ['pending', 'approved', 'rejected'],
-  walletBalance: Number,
-  corporateId: ObjectId (optional),
-  createdAt: Date
-}
-```
-
-### Card Model
-```javascript
-{
-  userId: ObjectId,
-  cardNumber: String (16 digits),
-  expiryDate: String,
-  cvv: String (3 digits),
-  spendingLimit: Number,
-  balance: Number,
-  status: Enum ['active', 'frozen', 'expired'],
-  createdAt: Date
-}
-```
-
-### Transaction Model
-```javascript
-{
-  userId: ObjectId,
-  cardId: ObjectId (optional),
-  type: Enum ['credit', 'debit', 'voucher', 'transfer'],
-  amount: Number,
-  status: Enum ['pending', 'completed', 'failed'],
-  description: String,
-  reference: String (unique),
-  createdAt: Date
-}
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-For support and questions:
-- 📧 Email: support@ppr.com
-- 📖 Documentation: [docs.ppr.com](https://docs.ppr.com)
-- 🐛 Issues: [GitHub Issues](https://github.com/your-repo/issues)
-
-## 🙏 Acknowledgments
-
-- **Next.js** team for the amazing framework
-- **Vercel** for seamless deployment
-- **MongoDB** for the flexible database
-- **Tailwind CSS** for the utility-first CSS framework
-- **Framer Motion** for smooth animations
 
 ---
 
-**Built with ❤️ for modern businesses**
+## ⚙️ Environment Variables
 
-*PPR Smart System - The future of digital gifting and corporate rewards.*
+```env
+# Database
+MONGODB_URI=mongodb+srv://...
+
+# Auth
+JWT_SECRET=your-jwt-secret-32-chars-min
+
+# App
+NEXT_PUBLIC_APP_NAME=PPR SMART SYSTEM
+NEXT_PUBLIC_APP_URL=https://www.pprsmart.com
+
+# Cloudinary (file uploads)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
+
+# SMTP (Google Workspace)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=support@pprsmartsystem.com
+SMTP_PASS=your-16-char-app-password
+SMTP_FROM=PPR Smart System <support@pprsmartsystem.com>
+
+# Cron (Vercel auto-settlement)
+CRON_SECRET=your-cron-secret
+```
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# Clone
+git clone <repository-url>
+cd "PPR SMART SYSTEM"
+
+# Install
+npm install
+
+# Setup env
+cp .env.example .env.local
+# Fill in your values
+
+# Run
+npm run dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 🕐 Cron Jobs
+
+Auto-settlement runs daily at **10:30 AM IST** (05:00 UTC):
+
+```json
+{
+  "crons": [
+    { "path": "/api/cron/settle", "schedule": "0 5 * * *" }
+  ]
+}
+```
+
+Skips: Sundays · 2nd & 4th Saturdays · Indian bank holidays
+
+---
+
+## 🔒 Security
+
+- JWT HTTP-only cookies
+- bcrypt password hashing
+- Role-based access control (RBAC)
+- KYC document verification
+- Admin impersonation with 1-hour expiry
+- Distributor hold/unhold system
+- Per-user maintenance mode
+
+---
+
+## 📬 Support
+
+- **Email:** support@pprsmartsystem.com
+- **Phone:** +91 9403893296
+- **Website:** [www.pprsmart.com](https://www.pprsmart.com)
+
+---
+
+*PPR Smart System — Digital Gifting, Corporate Rewards & Settlement Platform*
