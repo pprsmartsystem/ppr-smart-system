@@ -14,6 +14,8 @@ export default function SettingsPage() {
     minSpendingLimit: '100',
     allowUserRegistration: true,
     requireApproval: true,
+    fast2smsApiKey: '',
+    fast2smsEnabled: true,
   });
   const [paymentGateways, setPaymentGateways] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -62,6 +64,8 @@ export default function SettingsPage() {
           minSpendingLimit: data.settings.minSpendingLimit?.toString() || '100',
           allowUserRegistration: data.settings.allowUserRegistration ?? true,
           requireApproval: data.settings.requireApproval ?? true,
+          fast2smsApiKey: data.settings.fast2smsApiKey || '',
+          fast2smsEnabled: data.settings.fast2smsEnabled ?? true,
         });
       }
     }
@@ -156,6 +160,8 @@ export default function SettingsPage() {
           minSpendingLimit: parseInt(settings.minSpendingLimit),
           allowUserRegistration: settings.allowUserRegistration,
           requireApproval: settings.requireApproval,
+          fast2smsApiKey: settings.fast2smsApiKey,
+          fast2smsEnabled: settings.fast2smsEnabled,
         })
       });
 
@@ -252,6 +258,27 @@ export default function SettingsPage() {
             <input type="checkbox" checked={settings.requireApproval} onChange={(e) => setSettings({...settings, requireApproval: e.target.checked})} className="w-5 h-5 text-indigo-600 rounded" />
             <span className="text-gray-700">Require admin approval for new accounts</span>
           </label>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <h3 className="text-sm font-bold text-gray-900 mb-4">Fast2SMS OTP Settings</h3>
+        <div className="space-y-4">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input type="checkbox" checked={settings.fast2smsEnabled} onChange={(e) => setSettings({...settings, fast2smsEnabled: e.target.checked})} className="w-5 h-5 text-indigo-600 rounded" />
+            <span className="text-gray-700">Enable OTP verification for KYC</span>
+          </label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Fast2SMS API Key</label>
+            <input 
+              type="text" 
+              value={settings.fast2smsApiKey} 
+              onChange={(e) => setSettings({...settings, fast2smsApiKey: e.target.value})} 
+              className="input-field font-mono text-sm" 
+              placeholder="Enter Fast2SMS API Key"
+            />
+            <p className="text-xs text-gray-500 mt-1">Get your API key from <a href="https://www.fast2sms.com" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">Fast2SMS Dashboard</a></p>
+          </div>
         </div>
       </div>
 

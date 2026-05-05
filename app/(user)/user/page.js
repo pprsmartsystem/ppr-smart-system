@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   WalletIcon,
   CreditCardIcon,
@@ -17,6 +18,8 @@ import {
   ChevronRightIcon,
   EyeIcon,
   EyeSlashIcon,
+  ExclamationTriangleIcon,
+  DocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 import { formatCurrency } from '@/utils/cardUtils';
 
@@ -27,22 +30,25 @@ const fade = (delay = 0) => ({
 });
 
 export default function UserDashboard() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [cards, setCards] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [pendingSettlement, setPendingSettlement] = useState(0);
   const [loading, setLoading] = useState(true);
   const [hideBalance, setHideBalance] = useState(false);
+  const [kycStatus, setKycStatus] = useState(null);
 
   useEffect(() => { fetchDashboardData(); }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const [userRes, cardsRes, txRes, settlementRes] = await Promise.all([
+      const [userRes, cardsRes, txRes, settlementRes, kycRes] = await Promise.all([
         fetch('/api/auth/me'),
         fetch('/api/user/cards'),
         fetch('/api/user/transactions?limit=6'),
         fetch('/api/user/settlement'),
+        fetch('/api/user/kyc/status'),
       ]);
 
       if (!userRes.ok) return;
@@ -51,6 +57,10 @@ export default function UserDashboard() {
       if (cardsRes.ok) setCards((await cardsRes.json()).cards || []);
       if (txRes.ok) setTransactions((await txRes.json()).transactions || []);
       if (settlementRes.ok) setPendingSettlement((await settlementRes.json()).totalPending || 0);
+      if (kycRes.ok) {
+        const kycData = await kycRes.json();
+        setKycStatus(kycData.kyc);
+      }
     } catch {
       // silently fail — layout already handles auth
     } finally {
@@ -66,6 +76,80 @@ export default function UserDashboard() {
       </div>
     </div>
   );
+
+  // Block dashboard if KYC not approved
+  if (!kycStatus || kycStatus.status !== 'approved') {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-3xl border border-gray-100 p-8 text-center"
+        >
+          <div className="w-20 h-20 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-6">
+            {!kycStatus ? (
+              <DocumentCheckIcon className="w-10 h-10 text-orange-500" />
+            ) : kycStatus.status === 'pending' ? (
+              <ClockIcon className="w-10 h-10 text-blue-500" />
+            ) : kycStatus.status === 'rejected' ? (
+              <ExclamationTriangleIcon className="w-10 h-10 text-red-500" />
+            ) : (
+              <DocumentCheckIcon className="w-10 h-10 text-orange-500" />
+            )}
+          </div>
+
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            {!kycStatus ? 'KYC Verification Required' : 
+             kycStatus.status === 'pending' ? 'KYC Under Review' :
+             kycStatus.status === 'rejected' ? 'KYC Rejected' :
+             'Complete Your KYC'}
+          </h2>
+
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            {!kycStatus ? 'Please complete your KYC verification to access your dashboard and all features.' :
+             kycStatus.status === 'pending' ? 'Your KYC documents are under review. You will be notified once approved.' :
+             kycStatus.status === 'rejected' ? `Your KYC was rejected. Reason: ${kycStatus.rejectionReason || 'Please contact support'}` :
+             'Your KYC verification is required to access the dashboard.'}
+          </p>
+
+          {kycStatus?.status === 'pending' ? (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+              <p className="text-sm text-blue-700">
+                <strong>Status:</strong> Pending Review<br />
+                <strong>Submitted:</strong> {new Date(kycStatus.submittedAt).toLocaleDateString('en-IN')}
+              </p>
+            </div>
+          ) : null}
+
+          {kycStatus?.status === 'rejected' && (
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-6">
+              <p className="text-sm text-red-700">
+                <strong>Rejection Reason:</strong><br />
+                {kycStatus.rejectionReason || 'Please contact support for details'}
+              </p>
+            </div>
+          )}
+
+          <Link
+            href="/user/kyc"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
+          >
+            <DocumentCheckIcon className="w-5 h-5" />
+            {!kycStatus ? 'Complete KYC Now' :
+             kycStatus.status === 'pending' ? 'View KYC Status' :
+             kycStatus.status === 'rejected' ? 'Resubmit KYC' :
+             'Submit KYC'}
+          </Link>
+
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <p className="text-xs text-gray-500">
+              Need help? Contact support at <a href="mailto:support@pprsmartsystem.com" className="text-indigo-600 hover:underline">support@pprsmartsystem.com</a>
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   const totalCardBalance = cards.reduce((s, c) => s + c.balance, 0);
   const activeCards = cards.filter(c => c.status === 'active').length;

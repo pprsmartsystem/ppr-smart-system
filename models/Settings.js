@@ -29,6 +29,14 @@ const SettingsSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  fast2smsApiKey: {
+    type: String,
+    default: ''
+  },
+  fast2smsEnabled: {
+    type: Boolean,
+    default: true
+  },
   updatedAt: {
     type: Date,
     default: Date.now
