@@ -23,9 +23,11 @@ export default function KYCPage() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [otpEnabled, setOtpEnabled] = useState(true);
 
   useEffect(() => {
     fetchKYCStatus();
+    fetchSettings();
   }, []);
 
   useEffect(() => {
@@ -34,6 +36,19 @@ export default function KYCPage() {
       return () => clearInterval(interval);
     }
   }, [timer]);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings');
+      if (res.ok) {
+        const data = await res.json();
+        setOtpEnabled(data.settings?.fast2smsEnabled ?? true);
+      }
+    } catch (error) {
+      // Default to enabled if fetch fails
+      setOtpEnabled(true);
+    }
+  };
 
   const fetchKYCStatus = async () => {
     const res = await fetch('/api/user/kyc/status');
@@ -149,7 +164,8 @@ export default function KYCPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!otpVerified) {
+    // Only check OTP verification if OTP is enabled
+    if (otpEnabled && !otpVerified) {
       toast.error('Please verify your mobile number first');
       return;
     }
@@ -223,57 +239,70 @@ export default function KYCPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <input 
-                        type="tel" 
-                        value={formData.contactNumber} 
-                        onChange={(e) => {
-                          setFormData({ ...formData, contactNumber: e.target.value });
-                          setOtpSent(false);
-                          setOtpVerified(false);
-                          setOtp('');
-                        }} 
-                        className="input-field flex-1" 
-                        placeholder="10-digit mobile number" 
-                        pattern="[0-9]{10}" 
-                        maxLength="10"
-                        disabled={otpVerified}
-                        required 
-                      />
-                      <button
-                        type="button"
-                        onClick={sendOTP}
-                        disabled={sendingOtp || otpVerified || timer > 0}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
-                      >
-                        {sendingOtp ? 'Sending...' : timer > 0 ? `${timer}s` : otpVerified ? '✓ Verified' : 'Send OTP'}
-                      </button>
-                    </div>
-                    {otpSent && !otpVerified && (
+                  {otpEnabled ? (
+                    <div className="space-y-2">
                       <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="input-field flex-1"
-                          placeholder="Enter 6-digit OTP"
-                          maxLength="6"
+                        <input 
+                          type="tel" 
+                          value={formData.contactNumber} 
+                          onChange={(e) => {
+                            setFormData({ ...formData, contactNumber: e.target.value });
+                            setOtpSent(false);
+                            setOtpVerified(false);
+                            setOtp('');
+                          }} 
+                          className="input-field flex-1" 
+                          placeholder="10-digit mobile number" 
+                          pattern="[0-9]{10}" 
+                          maxLength="10"
+                          disabled={otpVerified}
+                          required 
                         />
                         <button
                           type="button"
-                          onClick={verifyOTP}
-                          disabled={verifyingOtp}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
+                          onClick={sendOTP}
+                          disabled={sendingOtp || otpVerified || timer > 0}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
                         >
-                          {verifyingOtp ? 'Verifying...' : 'Verify'}
+                          {sendingOtp ? 'Sending...' : timer > 0 ? `${timer}s` : otpVerified ? '✓ Verified' : 'Send OTP'}
                         </button>
                       </div>
-                    )}
-                    {otpVerified && (
-                      <p className="text-sm text-green-600 font-medium">✓ Mobile number verified</p>
-                    )}
-                  </div>
+                      {otpSent && !otpVerified && (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            className="input-field flex-1"
+                            placeholder="Enter 6-digit OTP"
+                            maxLength="6"
+                          />
+                          <button
+                            type="button"
+                            onClick={verifyOTP}
+                            disabled={verifyingOtp}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
+                          >
+                            {verifyingOtp ? 'Verifying...' : 'Verify'}
+                          </button>
+                        </div>
+                      )}
+                      {otpVerified && (
+                        <p className="text-sm text-green-600 font-medium">✓ Mobile number verified</p>
+                      )}
+                    </div>
+                  ) : (
+                    <input 
+                      type="tel" 
+                      value={formData.contactNumber} 
+                      onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })} 
+                      className="input-field" 
+                      placeholder="10-digit mobile number" 
+                      pattern="[0-9]{10}" 
+                      maxLength="10"
+                      required 
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">PAN Card Number</label>
@@ -364,57 +393,70 @@ export default function KYCPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <input 
-                    type="tel" 
-                    value={formData.contactNumber} 
-                    onChange={(e) => {
-                      setFormData({ ...formData, contactNumber: e.target.value });
-                      setOtpSent(false);
-                      setOtpVerified(false);
-                      setOtp('');
-                    }} 
-                    className="input-field flex-1" 
-                    placeholder="10-digit mobile number" 
-                    pattern="[0-9]{10}" 
-                    maxLength="10"
-                    disabled={otpVerified}
-                    required 
-                  />
-                  <button
-                    type="button"
-                    onClick={sendOTP}
-                    disabled={sendingOtp || otpVerified || timer > 0}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
-                  >
-                    {sendingOtp ? 'Sending...' : timer > 0 ? `${timer}s` : otpVerified ? '✓ Verified' : 'Send OTP'}
-                  </button>
-                </div>
-                {otpSent && !otpVerified && (
+              {otpEnabled ? (
+                <div className="space-y-2">
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="input-field flex-1"
-                      placeholder="Enter 6-digit OTP"
-                      maxLength="6"
+                    <input 
+                      type="tel" 
+                      value={formData.contactNumber} 
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactNumber: e.target.value });
+                        setOtpSent(false);
+                        setOtpVerified(false);
+                        setOtp('');
+                      }} 
+                      className="input-field flex-1" 
+                      placeholder="10-digit mobile number" 
+                      pattern="[0-9]{10}" 
+                      maxLength="10"
+                      disabled={otpVerified}
+                      required 
                     />
                     <button
                       type="button"
-                      onClick={verifyOTP}
-                      disabled={verifyingOtp}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
+                      onClick={sendOTP}
+                      disabled={sendingOtp || otpVerified || timer > 0}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
                     >
-                      {verifyingOtp ? 'Verifying...' : 'Verify'}
+                      {sendingOtp ? 'Sending...' : timer > 0 ? `${timer}s` : otpVerified ? '✓ Verified' : 'Send OTP'}
                     </button>
                   </div>
-                )}
-                {otpVerified && (
-                  <p className="text-sm text-green-600 font-medium">✓ Mobile number verified</p>
-                )}
-              </div>
+                  {otpSent && !otpVerified && (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        className="input-field flex-1"
+                        placeholder="Enter 6-digit OTP"
+                        maxLength="6"
+                      />
+                      <button
+                        type="button"
+                        onClick={verifyOTP}
+                        disabled={verifyingOtp}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
+                      >
+                        {verifyingOtp ? 'Verifying...' : 'Verify'}
+                      </button>
+                    </div>
+                  )}
+                  {otpVerified && (
+                    <p className="text-sm text-green-600 font-medium">✓ Mobile number verified</p>
+                  )}
+                </div>
+              ) : (
+                <input 
+                  type="tel" 
+                  value={formData.contactNumber} 
+                  onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })} 
+                  className="input-field" 
+                  placeholder="10-digit mobile number" 
+                  pattern="[0-9]{10}" 
+                  maxLength="10"
+                  required 
+                />
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">PAN Card Number</label>
