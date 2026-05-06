@@ -37,12 +37,24 @@ export default function KYCPage() {
     }
   }, [timer]);
 
+  useEffect(() => {
+    // Auto-verify when OTP is disabled
+    if (!otpEnabled) {
+      setOtpVerified(true);
+    }
+  }, [otpEnabled]);
+
   const fetchSettings = async () => {
     try {
       const res = await fetch('/api/admin/settings');
       if (res.ok) {
         const data = await res.json();
-        setOtpEnabled(data.settings?.fast2smsEnabled ?? true);
+        const isEnabled = data.settings?.fast2smsEnabled ?? true;
+        setOtpEnabled(isEnabled);
+        // If OTP is disabled, automatically mark as verified
+        if (!isEnabled) {
+          setOtpVerified(true);
+        }
       }
     } catch (error) {
       // Default to enabled if fetch fails
@@ -163,13 +175,6 @@ export default function KYCPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Only check OTP verification if OTP is enabled
-    if (otpEnabled && !otpVerified) {
-      toast.error('Please verify your mobile number first');
-      return;
-    }
-
     setUploading(true);
 
     try {
@@ -393,7 +398,7 @@ export default function KYCPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
-              {otpEnabled ? (
+                            {otpEnabled ? (
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <input 
