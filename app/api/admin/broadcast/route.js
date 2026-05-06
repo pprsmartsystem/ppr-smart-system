@@ -3,6 +3,9 @@ import dbConnect from '@/lib/mongodb';
 import Broadcast from '@/models/Broadcast';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
+import { revalidatePath } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -34,6 +37,10 @@ export async function POST(request) {
     await Broadcast.updateMany({}, { isActive: false });
 
     const broadcast = await Broadcast.create({ message, isActive: true });
+    
+    // Revalidate the broadcast API route
+    revalidatePath('/api/broadcast');
+    
     return NextResponse.json({ broadcast, clearLocalStorage: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -58,6 +65,10 @@ export async function DELETE(request) {
     const id = searchParams.get('id');
 
     await Broadcast.findByIdAndDelete(id);
+    
+    // Revalidate the broadcast API route
+    revalidatePath('/api/broadcast');
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

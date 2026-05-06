@@ -15,7 +15,14 @@ export default function BroadcastBar() {
 
   const fetchBroadcast = async () => {
     try {
-      const res = await fetch('/api/broadcast', { cache: 'no-store' });
+      // Add timestamp to prevent caching
+      const res = await fetch(`/api/broadcast?t=${Date.now()}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       const data = await res.json();
       if (data.broadcast) {
         // Clear any old broadcast dismissed keys that don't match current ID
