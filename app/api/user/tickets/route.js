@@ -12,7 +12,15 @@ export async function GET() {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     await connectDB();
 
-    const tickets = await Ticket.find({ userId: decoded.userId }).sort({ createdAt: -1 });
+    const tickets = await Ticket.find({ userId: decoded.userId })
+      .sort({ lastActivityAt: -1, createdAt: -1 });
+    
+    // Mark all as read by user
+    await Ticket.updateMany(
+      { userId: decoded.userId, unreadByUser: true },
+      { unreadByUser: false }
+    );
+    
     return NextResponse.json({ tickets });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
@@ -27,12 +35,15 @@ export async function POST(request) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     await connectDB();
 
-    const { subject, message, ticketId, reply } = await request.json();
+    const { subject, message, category, priority, ticketId, reply } = await request.json();
 
     if (ticketId && reply) {
       const ticket = await Ticket.findById(ticketId);
       ticket.replies.push({ message: reply, isAdmin: false });
       ticket.status = 'open';
+      ticket.unreadByAdmin = true;
+      ticket.unreadByUser = false;
+      ticket.lastActivityAt = new Date();
       await ticket.save();
       return NextResponse.json({ success: true, ticket });
     }
@@ -41,10 +52,16 @@ export async function POST(request) {
       userId: decoded.userId,
       subject,
       message,
+      category: category || 'other',
+      priority: priority || 'medium',
+      unreadByAdmin: true,
+      unreadByUser: false,
+      lastActivityAt: new Date(),
     });
 
     return NextResponse.json({ success: true, ticket });
   } catch (error) {
+    console.error('Ticket error:', error);
     return NextResponse.json({ error: 'Failed to create' }, { status: 500 });
   }
 }

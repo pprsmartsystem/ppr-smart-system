@@ -22,6 +22,11 @@ export async function GET() {
 
     // Get distributor info
     const distributor = await User.findById(decoded.userId);
+    
+    // Check if distributor is on hold
+    if (distributor.isOnHold || distributor.status === 'blocked') {
+      return NextResponse.json({ error: 'Account is on hold' }, { status: 403 });
+    }
 
     // Get all users under this distributor
     const users = await User.find({ 

@@ -1,33 +1,53 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
+import jwt from 'jsonwebtoken';
+import dbConnect from '@/lib/mongodb';
 import Ticket from '@/models/Ticket';
+import User from '@/models/User';
 
 export async function POST(request) {
   try {
-    const token = cookies().get('token')?.value;
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const cookieStore = cookies();
+    const token = cookieStore.get('token');
 
-    const decoded = verifyToken(token);
-    if (!decoded || decoded.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-    const { userId, subject, message } = await request.json();
+    const decoded = jwt.verify(token.value, process.env.JWT_SECRET);
+    
+    if (decoded.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await dbConnect();
+
+    const { userId, subject, message, category, priority } = await request.json();
 
     const ticket = await Ticket.create({
       userId,
       subject,
       message,
+      category: category || 'other',
+      priority: priority || 'medium',
       status: 'replied',
-      replies: [{ message, isAdmin: true, createdAt: new Date() }],
+      unreadByUser: true,
+      unreadByAdmin: false,
+      replies: [{
+        message,
+        isAdmin: true,
+        adminName: 'Support Team',
+        adminId: decoded.userId,
+        createdAt: new Date(),
+      }],
+      lastActivityAt: new Date(),
     });
 
-    const populated = await ticket.populate('userId', 'name email');
-    return NextResponse.json({ ticket: populated });
+    const populatedTicket = await Ticket.findById(ticket._id).populate('userId', 'name email');
+
+    return NextResponse.json({ success: true, ticket: populatedTicket });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Create ticket error:', error);
+    return NextResponse.json({ error: 'Failed to create ticket' }, { status: 500 });
   }
 }

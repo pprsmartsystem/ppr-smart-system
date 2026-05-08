@@ -15,7 +15,9 @@ export async function GET() {
     }
 
     await connectDB();
-    const tickets = await Ticket.find().populate('userId', 'name email').sort({ createdAt: -1 });
+    const tickets = await Ticket.find()
+      .populate('userId', 'name email')
+      .sort({ lastActivityAt: -1, createdAt: -1 });
     return NextResponse.json({ tickets });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
@@ -35,18 +37,37 @@ export async function POST(request) {
     await connectDB();
     const { ticketId, reply, status } = await request.json();
 
-    const ticket = await Ticket.findById(ticketId);
+    const ticket = await Ticket.findById(ticketId).populate('userId', 'name email');
+    
     if (reply) {
-      ticket.replies.push({ message: reply, isAdmin: true });
+      ticket.replies.push({ 
+        message: reply, 
+        isAdmin: true,
+        adminName: 'Support Team',
+        adminId: decoded.userId,
+        createdAt: new Date()
+      });
       ticket.status = 'replied';
+      ticket.unreadByUser = true;
+      ticket.lastActivityAt = new Date();
     }
+    
     if (status) {
       ticket.status = status;
+      if (status === 'resolved') {
+        ticket.resolvedAt = new Date();
+      }
+      if (status === 'closed') {
+        ticket.closedAt = new Date();
+      }
+      ticket.lastActivityAt = new Date();
     }
+    
     await ticket.save();
 
     return NextResponse.json({ success: true, ticket });
   } catch (error) {
+    console.error('Update ticket error:', error);
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
 }

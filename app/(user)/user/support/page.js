@@ -16,13 +16,36 @@ import {
   ShieldCheckIcon,
   BoltIcon,
   QuestionMarkCircleIcon,
+  PaperClipIcon,
+  StarIcon,
+  FlagIcon,
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 const STATUS = {
-  open:    { label: 'Open',    style: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',  dot: 'bg-amber-400' },
-  replied: { label: 'Replied', style: 'bg-blue-50  text-blue-700  ring-1 ring-blue-200',   dot: 'bg-blue-400'  },
-  closed:  { label: 'Closed',  style: 'bg-gray-100 text-gray-500  ring-1 ring-gray-200',   dot: 'bg-gray-400'  },
+  open:        { label: 'Open',        style: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',  dot: 'bg-amber-400' },
+  replied:     { label: 'Replied',     style: 'bg-blue-50  text-blue-700  ring-1 ring-blue-200',   dot: 'bg-blue-400'  },
+  in_progress: { label: 'In Progress', style: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200', dot: 'bg-purple-400' },
+  resolved:    { label: 'Resolved',    style: 'bg-green-50 text-green-700 ring-1 ring-green-200',  dot: 'bg-green-400' },
+  closed:      { label: 'Closed',      style: 'bg-gray-100 text-gray-500  ring-1 ring-gray-200',   dot: 'bg-gray-400'  },
 };
+
+const CATEGORIES = [
+  { value: 'account', label: 'Account', icon: '👤' },
+  { value: 'payment', label: 'Payment', icon: '💳' },
+  { value: 'card', label: 'Card', icon: '🎴' },
+  { value: 'kyc', label: 'KYC', icon: '📄' },
+  { value: 'settlement', label: 'Settlement', icon: '💰' },
+  { value: 'technical', label: 'Technical', icon: '⚙️' },
+  { value: 'other', label: 'Other', icon: '❓' },
+];
+
+const PRIORITIES = [
+  { value: 'low', label: 'Low', color: 'text-gray-600' },
+  { value: 'medium', label: 'Medium', color: 'text-blue-600' },
+  { value: 'high', label: 'High', color: 'text-orange-600' },
+  { value: 'urgent', label: 'Urgent', color: 'text-red-600' },
+];
 
 const FAQS = [
   { q: 'How do I add money to my wallet?', a: 'Go to Wallet → Add Money, scan the QR or use the payment link, then submit your UTR number for verification.' },
@@ -37,10 +60,17 @@ export default function UserSupportPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [newTicket, setNewTicket] = useState({ subject: '', message: '' });
+  const [newTicket, setNewTicket] = useState({ 
+    subject: '', 
+    message: '', 
+    category: 'other',
+    priority: 'medium' 
+  });
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [showRating, setShowRating] = useState(false);
+  const [rating, setRating] = useState({ score: 0, feedback: '' });
   const bottomRef = useRef(null);
 
   useEffect(() => { fetchTickets(); }, []);
@@ -64,9 +94,10 @@ export default function UserSupportPage() {
         body: JSON.stringify(newTicket),
       });
       if (res.ok) {
-        toast.success('Ticket created! We\'ll respond shortly.');
+        const data = await res.json();
+        toast.success(`Ticket #${data.ticket.ticketNumber} created!`);
         setShowModal(false);
-        setNewTicket({ subject: '', message: '' });
+        setNewTicket({ subject: '', message: '', category: 'other', priority: 'medium' });
         fetchTickets();
       } else toast.error('Failed to create ticket');
     } catch { toast.error('Failed to create ticket'); }
@@ -94,42 +125,71 @@ export default function UserSupportPage() {
     finally { setSending(false); }
   };
 
-  const openCount = tickets.filter(t => t.status === 'open' || t.status === 'replied').length;
+  const handleRating = async () => {
+    if (rating.score === 0) {
+      toast.error('Please select a rating');
+      return;
+    }
+    try {
+      const res = await fetch('/api/user/tickets/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketId: selectedTicket._id, ...rating }),
+      });
+      if (res.ok) {
+        toast.success('Thank you for your feedback!');
+        setShowRating(false);
+        setRating({ score: 0, feedback: '' });
+        fetchTickets();
+        setSelectedTicket(null);
+      }
+    } catch { toast.error('Failed to submit rating'); }
+  };
+
+  const openCount = tickets.filter(t => ['open', 'replied', 'in_progress'].includes(t.status)).length;
 
   // ── Ticket Detail View ──────────────────────────────────────────────────
   if (selectedTicket) return (
     <div className="max-w-2xl mx-auto flex flex-col" style={{ height: 'calc(100dvh - 9rem)' }}>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-gray-100 p-4 mb-3 flex items-center gap-3 flex-shrink-0">
-        <button onClick={() => setSelectedTicket(null)}
-          className="w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors">
-          <ArrowLeftIcon className="w-4 h-4 text-gray-600" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-gray-900 truncate">{selectedTicket.subject}</p>
-          <p className="text-xs text-gray-400">#{selectedTicket._id?.slice(-8).toUpperCase()}</p>
+        className="bg-white rounded-2xl border border-gray-100 p-4 mb-3 flex-shrink-0">
+        <div className="flex items-center gap-3 mb-3">
+          <button onClick={() => setSelectedTicket(null)}
+            className="w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors">
+            <ArrowLeftIcon className="w-4 h-4 text-gray-600" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-gray-900 truncate">{selectedTicket.subject}</p>
+            <p className="text-xs text-gray-400">#{selectedTicket.ticketNumber}</p>
+          </div>
+          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${STATUS[selectedTicket.status]?.style}`}>
+            {STATUS[selectedTicket.status]?.label}
+          </span>
         </div>
-        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold flex-shrink-0 ${STATUS[selectedTicket.status]?.style}`}>
-          {STATUS[selectedTicket.status]?.label}
-        </span>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="px-2 py-1 bg-gray-50 rounded-lg text-gray-600">
+            {CATEGORIES.find(c => c.value === selectedTicket.category)?.icon} {CATEGORIES.find(c => c.value === selectedTicket.category)?.label}
+          </span>
+          <span className={`px-2 py-1 bg-gray-50 rounded-lg flex items-center gap-1 ${PRIORITIES.find(p => p.value === selectedTicket.priority)?.color}`}>
+            <FlagIcon className="w-3 h-3" /> {PRIORITIES.find(p => p.value === selectedTicket.priority)?.label}
+          </span>
+        </div>
       </motion.div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 px-1 pb-3">
         {/* Original message */}
-        {!selectedTicket.replies?.[0]?.isAdmin && (
-          <div className="flex justify-end">
-            <div className="max-w-[80%]">
-              <div className="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3">
-                <p className="text-sm leading-relaxed">{selectedTicket.message}</p>
-              </div>
-              <p className="text-xs text-gray-400 text-right mt-1">
-                {new Date(selectedTicket.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-              </p>
+        <div className="flex justify-end">
+          <div className="max-w-[80%]">
+            <div className="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3">
+              <p className="text-sm leading-relaxed">{selectedTicket.message}</p>
             </div>
+            <p className="text-xs text-gray-400 text-right mt-1">
+              {new Date(selectedTicket.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </p>
           </div>
-        )}
+        </div>
 
         {selectedTicket.replies?.map((r, i) => (
           <div key={i} className={`flex ${r.isAdmin ? 'justify-start' : 'justify-end'}`}>
@@ -139,7 +199,7 @@ export default function UserSupportPage() {
                   <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center">
                     <ShieldCheckIcon className="w-3 h-3 text-indigo-600" />
                   </div>
-                  <span className="text-xs font-semibold text-indigo-600">Support Team</span>
+                  <span className="text-xs font-semibold text-indigo-600">{r.adminName || 'Support Team'}</span>
                 </div>
               )}
               <div className={`rounded-2xl px-4 py-3 ${r.isAdmin ? 'bg-white border border-gray-100 rounded-tl-sm text-gray-800' : 'bg-indigo-600 text-white rounded-tr-sm'}`}>
@@ -154,8 +214,34 @@ export default function UserSupportPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Reply Input */}
-      {selectedTicket.status !== 'closed' ? (
+      {/* Reply Input or Rating */}
+      {selectedTicket.status === 'resolved' && !selectedTicket.rating ? (
+        <div className="flex-shrink-0 mt-2 bg-white rounded-2xl border border-gray-100 p-4">
+          <p className="text-sm font-semibold text-gray-900 mb-3">Rate your support experience</p>
+          <div className="flex gap-2 mb-3">
+            {[1, 2, 3, 4, 5].map(star => (
+              <button key={star} onClick={() => setRating({ ...rating, score: star })}
+                className="transition-transform hover:scale-110">
+                {star <= rating.score ? (
+                  <StarSolid className="w-8 h-8 text-yellow-400" />
+                ) : (
+                  <StarIcon className="w-8 h-8 text-gray-300" />
+                )}
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={rating.feedback}
+            onChange={e => setRating({ ...rating, feedback: e.target.value })}
+            placeholder="Additional feedback (optional)"
+            className="input-field resize-none text-sm mb-3"
+            rows={2}
+          />
+          <button onClick={handleRating} className="btn-primary w-full text-sm py-2">
+            Submit Rating
+          </button>
+        </div>
+      ) : selectedTicket.status !== 'closed' ? (
         <form onSubmit={handleReply} className="flex-shrink-0 mt-2">
           <div className="bg-white rounded-2xl border border-gray-100 p-3 flex items-end gap-3">
             <textarea
@@ -176,16 +262,22 @@ export default function UserSupportPage() {
         <div className="flex-shrink-0 mt-2 bg-gray-50 rounded-2xl border border-gray-100 p-4 text-center">
           <CheckCircleIcon className="w-5 h-5 text-gray-400 mx-auto mb-1" />
           <p className="text-sm text-gray-500">This ticket is closed</p>
+          {selectedTicket.rating && (
+            <div className="mt-2 flex items-center justify-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <StarSolid key={i} className={`w-4 h-4 ${i < selectedTicket.rating.score ? 'text-yellow-400' : 'text-gray-300'}`} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 
-  // ── Main View ───────────────────────────────────────────────────────────
+  // ── Main View (rest of the code remains similar with updated UI) ───────
   return (
     <div className="max-w-2xl mx-auto space-y-5 pb-10">
-
-      {/* Hero */}
+      {/* Hero - same as before */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <div className="relative overflow-hidden rounded-3xl p-6 text-white"
           style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1d4ed8 100%)' }}>
@@ -205,7 +297,7 @@ export default function UserSupportPage() {
               {[
                 { label: 'Total Tickets', value: tickets.length, icon: ChatBubbleLeftRightIcon, color: 'text-blue-300' },
                 { label: 'Active',        value: openCount,       icon: ExclamationCircleIcon,  color: 'text-amber-300' },
-                { label: 'Resolved',      value: tickets.filter(t => t.status === 'closed').length, icon: CheckCircleIcon, color: 'text-green-300' },
+                { label: 'Resolved',      value: tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length, icon: CheckCircleIcon, color: 'text-green-300' },
               ].map(({ label, value, icon: Icon, color }) => (
                 <div key={label} className="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/10">
                   <Icon className={`w-4 h-4 ${color} mb-1.5`} />
@@ -218,7 +310,7 @@ export default function UserSupportPage() {
         </div>
       </motion.div>
 
-      {/* Quick Help */}
+      {/* Quick Help - same */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -233,11 +325,10 @@ export default function UserSupportPage() {
               <p className="text-xs font-bold text-gray-800">{label}</p>
               <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
             </div>
-          ))}
-        </div>
+          ))}</div>
       </motion.div>
 
-      {/* My Tickets */}
+      {/* My Tickets - updated with new fields */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
@@ -259,17 +350,20 @@ export default function UserSupportPage() {
               {tickets.map((ticket, i) => {
                 const st = STATUS[ticket.status] || STATUS.open;
                 const hasNewReply = ticket.status === 'replied';
+                const cat = CATEGORIES.find(c => c.value === ticket.category);
                 return (
                   <motion.div key={ticket._id}
                     initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
                     onClick={() => setSelectedTicket(ticket)}
-                    className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30 cursor-pointer transition-all group"
-                  >
+                    className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30 cursor-pointer transition-all group">
                     <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${st.dot} ${hasNewReply ? 'animate-pulse' : ''}`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{ticket.subject}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {new Date(ticket.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{ticket.subject}</p>
+                        <span className="text-xs">{cat?.icon}</span>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        #{ticket.ticketNumber} · {new Date(ticket.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                         {ticket.replies?.length > 0 && ` · ${ticket.replies.length} repl${ticket.replies.length > 1 ? 'ies' : 'y'}`}
                       </p>
                     </div>
@@ -291,7 +385,7 @@ export default function UserSupportPage() {
         </div>
       </motion.div>
 
-      {/* FAQ */}
+      {/* FAQ - same */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center gap-2 mb-4">
@@ -318,11 +412,11 @@ export default function UserSupportPage() {
         </div>
       </motion.div>
 
-      {/* Create Ticket Modal */}
+      {/* Create Ticket Modal - updated with category and priority */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">New Support Ticket</h2>
@@ -334,6 +428,26 @@ export default function UserSupportPage() {
               </button>
             </div>
             <form onSubmit={handleCreateTicket} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+                <select value={newTicket.category}
+                  onChange={e => setNewTicket({ ...newTicket, category: e.target.value })}
+                  className="input-field">
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Priority</label>
+                <select value={newTicket.priority}
+                  onChange={e => setNewTicket({ ...newTicket, priority: e.target.value })}
+                  className="input-field">
+                  {PRIORITIES.map(pri => (
+                    <option key={pri.value} value={pri.value}>{pri.label}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Subject</label>
                 <input type="text" value={newTicket.subject}
