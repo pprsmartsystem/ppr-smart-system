@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export async function middleware(request) {
+export function middleware(request) {
   const { pathname } = request.nextUrl;
   
   // Public routes
@@ -23,31 +23,7 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  // Check hold status for distributors
-  if (pathname.startsWith('/distributor')) {
-    try {
-      // Decode token (without verification for middleware)
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-      
-      if (payload.role === 'distributor') {
-        const { default: connectDB } = await import('./lib/mongodb');
-        const { default: User } = await import('./models/User');
-        
-        await connectDB();
-        const user = await User.findById(payload.userId).select('isOnHold status').lean();
-        
-        if (user && (user.isOnHold || user.status === 'blocked')) {
-          const response = NextResponse.redirect(new URL('/login', request.url));
-          response.cookies.delete('token');
-          return response;
-        }
-      }
-    } catch (error) {
-      console.error('Middleware hold check error:', error);
-    }
-  }
-  
-  // Token exists and user is not on hold, allow access
+  // Token exists, allow access
   return NextResponse.next();
 }
 

@@ -32,6 +32,12 @@ export default function DistributorDashboard() {
     if (showRefresh) setRefreshing(true);
     try {
       const res = await fetch('/api/distributor/dashboard');
+      if (res.status === 403) {
+        // Account is on hold - logout
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = '/login?message=Account is on hold';
+        return;
+      }
       if (res.ok) setStats(await res.json());
     } finally {
       setLoading(false);
