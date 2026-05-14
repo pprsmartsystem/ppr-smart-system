@@ -66,6 +66,14 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  settlementBlocked: {
+    type: Boolean,
+    default: false,
+  },
+  settlementBlockReason: {
+    type: String,
+    default: null,
+  },
 }, {
   timestamps: true,
 });

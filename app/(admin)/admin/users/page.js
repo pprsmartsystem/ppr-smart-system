@@ -33,6 +33,7 @@ export default function AdminUsersPage() {
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [maintenanceTarget, setMaintenanceTarget] = useState(null);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
+  const [settlementBlockedUsers, setSettlementBlockedUsers] = useState(new Set());
 
   const MAINTENANCE_PRESETS = [
     {
@@ -76,6 +77,30 @@ export default function AdminUsersPage() {
     } catch { toast.error('Failed to update maintenance mode'); }
   };
 
+  const handleToggleSettlement = async (userId, block) => {
+    const reason = block ? prompt('Enter reason for blocking settlement (optional):') : null;
+    if (block && reason === null) return; // User cancelled
+    
+    try {
+      const res = await fetch('/api/admin/users/toggle-settlement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action: block ? 'block' : 'unblock', reason }),
+      });
+      if (res.ok) {
+        toast.success(`Settlement ${block ? 'blocked 🚫' : 'unblocked ✓'} for user`);
+        setSettlementBlockedUsers(prev => {
+          const next = new Set(prev);
+          block ? next.add(userId.toString()) : next.delete(userId.toString());
+          return next;
+        });
+      } else {
+        const d = await res.json();
+        toast.error(d.error || 'Failed to update settlement status');
+      }
+    } catch { toast.error('Failed to update settlement status'); }
+  };
+
   const fetchDistributors = async () => {
     try {
       const res = await fetch('/api/admin/distributors');
@@ -95,6 +120,12 @@ export default function AdminUsersPage() {
       if (usersRes.ok) {
         const data = await usersRes.json();
         setUsers(data.users || []);
+        // Track settlement blocked users
+        const blocked = new Set();
+        (data.users || []).forEach(u => {
+          if (u.settlementBlocked) blocked.add(u._id.toString());
+        });
+        setSettlementBlockedUsers(blocked);
       }
       if (settingsRes?.ok) {
         const data = await settingsRes.json();
@@ -393,6 +424,20 @@ export default function AdminUsersPage() {
                         }`}
                       >
                         <WrenchScrewdriverIcon className="w-4 h-4" />
+                      </button>
+                      {/* Settlement Block Toggle */}
+                      <button
+                        onClick={() => handleToggleSettlement(user._id, !settlementBlockedUsers.has(user._id.toString()))}
+                        title={settlementBlockedUsers.has(user._id.toString()) ? 'Unblock Settlement' : 'Block Settlement'}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          settlementBlockedUsers.has(user._id.toString())
+                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                            : 'text-gray-400 hover:bg-red-50 hover:text-red-600'
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                       </button>
                     </div>
                   </td>

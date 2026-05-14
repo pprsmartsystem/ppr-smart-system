@@ -42,6 +42,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Check if settlement is blocked by admin
+    if (user.settlementBlocked) {
+      return NextResponse.json({ 
+        error: user.settlementBlockReason || 'Settlement is currently blocked for your account. Please contact support.' 
+      }, { status: 403 });
+    }
+
     if (user.walletBalance < amount) {
       return NextResponse.json({ error: 'Insufficient balance' }, { status: 400 });
     }
