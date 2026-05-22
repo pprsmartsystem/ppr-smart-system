@@ -51,6 +51,7 @@ export default function AdminKYCPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [rekycReason, setRekycReason] = useState('');
   const [viewingDoc, setViewingDoc] = useState(null);
+  const [searchContact, setSearchContact] = useState('');
 
   useEffect(() => { fetchKYCs(); }, []);
 
@@ -95,6 +96,11 @@ export default function AdminKYCPage() {
     kyc.otherDocument ? { label: `Other — ${kyc.otherDocumentRemark || 'Document'}`, url: kyc.otherDocument } : null,
   ].filter(d => d?.url);
 
+  const filteredKycs = kycs.filter(kyc => {
+    if (!searchContact) return true;
+    return kyc.contactNumber?.includes(searchContact);
+  });
+
   if (loading) return (
     <div className="space-y-3 animate-pulse">
       {[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-gray-100 rounded-xl" />)}
@@ -106,10 +112,39 @@ export default function AdminKYCPage() {
       <PageHeader icon={ShieldCheckIcon} title="KYC Management" subtitle="Review and approve user KYC submissions" color="from-emerald-500 to-green-600"
         action={
           <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-3 py-1.5 rounded-xl">
-            <span className="font-semibold text-gray-900">{kycs.filter(k => k.status === 'pending').length}</span> pending
+            <span className="font-semibold text-gray-900">{filteredKycs.filter(k => k.status === 'pending').length}</span> pending
           </div>
         }
       />
+
+      {/* Search by Contact */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <div className="relative">
+          <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search by contact number..."
+            value={searchContact}
+            onChange={(e) => setSearchContact(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300"
+          />
+          {searchContact && (
+            <button
+              onClick={() => setSearchContact('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {searchContact && (
+          <p className="text-xs text-gray-500 mt-2">
+            Found {filteredKycs.length} result{filteredKycs.length !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
 
       {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -117,17 +152,20 @@ export default function AdminKYCPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                {['User', 'Bank Details', 'PAN', 'Status', 'Submitted', 'Actions'].map((h, i) => (
-                  <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i === 5 ? 'text-right' : 'text-left'}`}>{h}</th>
+                {['User', 'Contact', 'Bank Details', 'PAN', 'Status', 'Submitted', 'Actions'].map((h, i) => (
+                  <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i === 6 ? 'text-right' : 'text-left'}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {kycs.map((kyc) => (
+              {filteredKycs.map((kyc) => (
                 <tr key={kyc._id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-3 px-4">
                     <p className="text-sm font-semibold text-gray-900">{kyc.userId?.name}</p>
                     <p className="text-xs text-gray-400">{kyc.userId?.email}</p>
+                  </td>
+                  <td className="py-3 px-4">
+                    <p className="text-sm font-mono font-semibold text-gray-700">{kyc.contactNumber || '—'}</p>
                   </td>
                   <td className="py-3 px-4">
                     <p className="text-sm text-gray-700 font-medium">{kyc.bankName || '—'}</p>
@@ -146,7 +184,13 @@ export default function AdminKYCPage() {
             </tbody>
           </table>
         </div>
-        {kycs.length === 0 && <div className="text-center py-12 text-sm text-gray-400">No KYC submissions</div>}
+        {filteredKycs.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-sm text-gray-400">
+              {searchContact ? 'No KYC found with this contact number' : 'No KYC submissions'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Review Modal */}
