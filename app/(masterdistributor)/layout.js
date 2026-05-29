@@ -9,35 +9,26 @@ import MaintenancePopup from '@/components/MaintenancePopup';
 export default function MasterDistributorLayout({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (!res.ok) {
-          router.push('/login');
-          return;
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data.role === 'masterdistributor') {
+          setUser(data);
+        } else {
+          router.replace('/login');
         }
-        const data = await res.json();
-        if (data.user.role !== 'masterdistributor') {
-          router.push('/login');
-          return;
-        }
-        setUser(data.user);
-      } catch (error) {
-        router.push('/login');
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkAuth();
+      })
+      .catch(() => router.replace('/login'))
+      .finally(() => setChecked(true));
   }, [router]);
 
-  if (loading) {
+  if (!checked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600" />
       </div>
     );
   }
@@ -45,11 +36,11 @@ export default function MasterDistributorLayout({ children }) {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <BroadcastBar />
-      <MaintenancePopup />
-      <Sidebar role="masterdistributor" user={user} />
-      <div className="lg:pl-64">
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar userRole="masterdistributor" userName={user.name} userEmail={user.email} />
+      <div className="flex-1 lg:pl-0 min-w-0">
+        <BroadcastBar />
+        <MaintenancePopup />
         <main className="p-4 lg:p-8">
           {children}
         </main>
