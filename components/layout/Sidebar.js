@@ -11,7 +11,7 @@ import {
   WalletIcon, BuildingOfficeIcon, ShieldCheckIcon, DocumentChartBarIcon,
   DocumentCheckIcon, BellIcon, ChatBubbleLeftRightIcon, MegaphoneIcon,
   ComputerDesktopIcon, ShoppingBagIcon, DocumentTextIcon, TruckIcon,
-  CurrencyDollarIcon, ClipboardDocumentListIcon, BanknotesIcon,
+  CurrencyDollarIcon, ClipboardDocumentListIcon, BanknotesIcon, StarIcon,
 } from '@heroicons/react/24/outline';
 
 const NAV = {
@@ -19,6 +19,7 @@ const NAV = {
     { name: 'Dashboard', href: '/admin', icon: HomeIcon },
     { name: 'Users', href: '/admin/users', icon: UserGroupIcon },
     { name: 'Distributors', href: '/admin/distributors', icon: UserGroupIcon },
+    { name: 'Master Distributors', href: '/admin/masterdistributors', icon: StarIcon },
     { name: 'Wallet', href: '/admin/wallet', icon: WalletIcon },
     { name: 'Corporates', href: '/admin/corporates', icon: BuildingOfficeIcon },
     { name: 'Cards', href: '/admin/cards', icon: CreditCardIcon },
@@ -41,6 +42,14 @@ const NAV = {
     { name: 'Payment Logs', href: '/admin/payment-logs', icon: CurrencyDollarIcon },
     { name: 'Service Reports', href: '/admin/service-reports', icon: ClipboardDocumentListIcon },
     { name: 'Audit Logs', href: '/admin/audit-logs', icon: ClipboardDocumentListIcon },
+  ],
+  masterdistributor: [
+    { name: 'Dashboard', href: '/masterdistributor', icon: HomeIcon },
+    { name: 'Distributors', href: '/masterdistributor/distributors', icon: BuildingOfficeIcon },
+    { name: 'Users', href: '/masterdistributor/users', icon: UserGroupIcon },
+    { name: 'Wallet', href: '/masterdistributor/wallet', icon: WalletIcon },
+    { name: 'Reports', href: '/masterdistributor/reports', icon: DocumentChartBarIcon },
+    { name: 'Settings', href: '/masterdistributor/settings', icon: CogIcon },
   ],
   distributor: [
     { name: 'Dashboard', href: '/distributor', icon: HomeIcon },

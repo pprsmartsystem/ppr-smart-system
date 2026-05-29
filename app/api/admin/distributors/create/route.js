@@ -18,7 +18,7 @@ export async function POST(request) {
     }
 
     await dbConnect();
-    const { name, email, password } = await request.json();
+    const { name, email, password, masterDistributorId } = await request.json();
 
     // Check if email already exists
     const existingUser = await User.findOne({ email });
@@ -35,8 +35,9 @@ export async function POST(request) {
       email,
       password: hashedPassword,
       role: 'distributor',
-      status: 'approved', // Auto-approve admin created distributors
-      walletBalance: 0
+      status: 'approved',
+      walletBalance: 0,
+      ...(masterDistributorId ? { masterDistributorId } : {}),
     });
 
     return NextResponse.json({ 
