@@ -69,6 +69,14 @@ export async function POST(request) {
 
     const settlementDate = getNextWorkingDay();
 
+    const GLOBAL_RATE = 1.77;
+    const rate = (user.settlementRate !== null && user.settlementRate !== undefined)
+      ? user.settlementRate
+      : GLOBAL_RATE;
+
+    const deduction = parseFloat(((amount * rate) / 100).toFixed(2));
+    const settlementAmount = parseFloat((amount - deduction).toFixed(2));
+
     // Deduct from wallet immediately
     user.walletBalance -= amount;
     await user.save();
@@ -77,8 +85,8 @@ export async function POST(request) {
     await Settlement.create({
       userId: decoded.userId,
       spendAmount: amount,
-      settlementRate: 0,
-      settlementAmount: amount,
+      settlementRate: rate,
+      settlementAmount,
       type: 'manual',
       source: 'user',
       status: 'pending',
@@ -92,7 +100,7 @@ export async function POST(request) {
         subject: 'Settlement Initiated — PPR Smart System',
         html: settlementInitiatedEmail({
           name: user.name,
-          amount,
+          amount: settlementAmount,
           settlementDate,
           reference: `SETTLE-${Date.now()}`,
           walletBalance: user.walletBalance,
@@ -104,8 +112,11 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: `₹${amount.toFixed(2)} settlement request submitted. Amount will be credited on ${settlementDate.toLocaleDateString('en-IN')}`,
+      message: `₹${settlementAmount.toFixed(2)} settlement request submitted${rate > 0 ? ` (after ${rate}% deduction)` : ''}. Amount will be credited on ${settlementDate.toLocaleDateString('en-IN')}`,
       settlementDate,
+      settlementAmount,
+      deduction,
+      rate,
     });
   } catch (error) {
     console.error('Settlement error:', error);

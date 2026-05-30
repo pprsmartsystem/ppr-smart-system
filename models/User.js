@@ -78,6 +78,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  settlementRate: {
+    type: Number,
+    default: null, // null = use global rate (1.77%)
+  },
 }, {
   timestamps: true,
 });

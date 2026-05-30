@@ -7,6 +7,7 @@ import Transaction from '@/models/Transaction';
 import Settlement from '@/models/Settlement';
 import Cashback from '@/models/Cashback';
 import UserSettings from '@/models/UserSettings';
+import User from '@/models/User';
 
 export async function POST(request) {
   try {
@@ -56,10 +57,13 @@ export async function POST(request) {
     const cashbackRate = userSettings?.cashbackRate || 4; // Default 4%
 
     if (autoSettlement) {
-      // Calculate settlement: spend amount minus 1.77% deduction
-      const settlementRate = 1.77;
-      const deductionAmount = (amount * settlementRate) / 100;
-      const settlementAmount = amount - deductionAmount;
+      // Use user's custom settlement rate, fallback to global 1.77%
+      const cardOwner = await User.findById(card.userId).select('settlementRate');
+      const settlementRate = (cardOwner?.settlementRate !== null && cardOwner?.settlementRate !== undefined)
+        ? cardOwner.settlementRate
+        : 1.77;
+      const deductionAmount = parseFloat(((amount * settlementRate) / 100).toFixed(2));
+      const settlementAmount = parseFloat((amount - deductionAmount).toFixed(2));
 
       // Create settlement record for card owner (User B)
       await Settlement.create({

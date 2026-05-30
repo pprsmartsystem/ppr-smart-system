@@ -142,9 +142,12 @@ export async function POST(request) {
     }
 
     if (action === 'create_settlement' && userId && spendAmount) {
-      const settlementRate = 1.77;
-      const deductionAmount = (spendAmount * settlementRate) / 100;
-      const settlementAmount = spendAmount - deductionAmount;
+      const user = await User.findById(userId).select('settlementRate');
+      const settlementRate = (user?.settlementRate !== null && user?.settlementRate !== undefined)
+        ? user.settlementRate
+        : 1.77;
+      const deductionAmount = parseFloat(((spendAmount * settlementRate) / 100).toFixed(2));
+      const settlementAmount = parseFloat((spendAmount - deductionAmount).toFixed(2));
 
       const settlement = await Settlement.create({
         userId,

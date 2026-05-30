@@ -34,6 +34,9 @@ export default function AdminUsersPage() {
   const [maintenanceTarget, setMaintenanceTarget] = useState(null);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [settlementBlockedUsers, setSettlementBlockedUsers] = useState(new Set());
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [rateUser, setRateUser] = useState(null);
+  const [rateValue, setRateValue] = useState('');
 
   const MAINTENANCE_PRESETS = [
     {
@@ -99,6 +102,27 @@ export default function AdminUsersPage() {
         toast.error(d.error || 'Failed to update settlement status');
       }
     } catch { toast.error('Failed to update settlement status'); }
+  };
+
+  const handleSetSettlementRate = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/users/set-settlement-rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: rateUser._id, rate: rateValue === '' ? null : parseFloat(rateValue) }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message);
+        setShowRateModal(false);
+        setRateUser(null);
+        setRateValue('');
+        fetchUsers();
+      } else {
+        toast.error(data.error || 'Failed to set rate');
+      }
+    } catch { toast.error('Failed to set rate'); }
   };
 
   const fetchDistributors = async () => {
@@ -439,6 +463,18 @@ export default function AdminUsersPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </button>
+                      {/* Settlement Rate */}
+                      <button
+                        onClick={() => { setRateUser(user); setRateValue(user.settlementRate !== null && user.settlementRate !== undefined ? user.settlementRate : ''); setShowRateModal(true); }}
+                        title={`Settlement Rate: ${user.settlementRate !== null && user.settlementRate !== undefined ? user.settlementRate + '%' : '1.77% (default)'}`}
+                        className={`p-1.5 rounded-lg transition-colors text-xs font-bold ${
+                          user.settlementRate !== null && user.settlementRate !== undefined
+                            ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                            : 'text-gray-400 hover:bg-indigo-50 hover:text-indigo-600'
+                        }`}
+                      >
+                        %
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -570,6 +606,51 @@ export default function AdminUsersPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Settlement Rate Modal */}
+      {showRateModal && rateUser && (
+        <AdminModal
+          title="Set Settlement Rate"
+          subtitle={`Custom deduction rate for ${rateUser.name}`}
+          onClose={() => { setShowRateModal(false); setRateUser(null); setRateValue(''); }}
+        >
+          <form onSubmit={handleSetSettlementRate} className="space-y-4">
+            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+              <p className="text-xs text-gray-500 mb-1">Current Rate</p>
+              <p className="text-2xl font-bold text-indigo-700">
+                {rateUser.settlementRate !== null && rateUser.settlementRate !== undefined
+                  ? `${rateUser.settlementRate}%`
+                  : '1.77% (global default)'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                New Rate (%) <span className="text-gray-400 font-normal">— leave empty to reset to global default (1.77%)</span>
+              </label>
+              <input
+                type="number"
+                value={rateValue}
+                onChange={e => setRateValue(e.target.value)}
+                placeholder="e.g. 2.5"
+                min="0"
+                max="100"
+                step="0.01"
+                className="input-field"
+                autoFocus
+              />
+            </div>
+            {rateValue !== '' && !isNaN(parseFloat(rateValue)) && (
+              <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs text-amber-800">
+                On ₹10,000 → deduction <strong>₹{((10000 * parseFloat(rateValue)) / 100).toFixed(2)}</strong>, user receives <strong>₹{(10000 - (10000 * parseFloat(rateValue)) / 100).toFixed(2)}</strong>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button type="button" onClick={() => { setShowRateModal(false); setRateUser(null); setRateValue(''); }} className="flex-1 btn-secondary">Cancel</button>
+              <button type="submit" className="flex-1 btn-primary">Save Rate</button>
+            </div>
+          </form>
+        </AdminModal>
       )}
     </div>
   );
