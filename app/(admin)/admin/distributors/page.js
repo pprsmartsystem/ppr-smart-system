@@ -382,8 +382,8 @@ export default function AdminDistributorsPage() {
 
                 {distributorStats.topUsers && distributorStats.topUsers.length > 0 && (
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Top 5 Users by Spend</h4>
-                    <div className="space-y-3">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">All Users by Spend</h4>
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                       {distributorStats.topUsers.map((user, index) => (
                         <div key={user._id} className="flex items-center justify-between p-3 bg-white rounded-lg">
                           <div className="flex items-center gap-3">

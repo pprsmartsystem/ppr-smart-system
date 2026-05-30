@@ -85,7 +85,7 @@ export async function GET(request) {
       userSpendMap[userId].redemptionCount += 1;
     });
 
-    const topUsers = users
+    const allUsers = users
       .map(u => ({
         _id: u._id,
         name: u.name,
@@ -93,9 +93,7 @@ export async function GET(request) {
         totalSpend: userSpendMap[u._id.toString()]?.totalSpend || 0,
         redemptionCount: userSpendMap[u._id.toString()]?.redemptionCount || 0
       }))
-      .filter(u => u.totalSpend > 0)
-      .sort((a, b) => b.totalSpend - a.totalSpend)
-      .slice(0, 5);
+      .sort((a, b) => b.totalSpend - a.totalSpend);
 
     return NextResponse.json({
       totalUsers,
@@ -106,7 +104,7 @@ export async function GET(request) {
       todaySpendAmount,
       monthRedemptions: monthRedemptions.length,
       monthSpendAmount,
-      topUsers,
+      topUsers: allUsers,
       dateRange: { startDate, endDate }
     });
   } catch (error) {
