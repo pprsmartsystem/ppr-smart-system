@@ -9,6 +9,17 @@ import UserSettings from '@/models/UserSettings';
 import { sendMail } from '@/lib/mailer';
 import { settlementProcessedEmail } from '@/lib/emails/settlementProcessed';
 
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
+import connectDB from '@/lib/mongodb';
+import Settlement from '@/models/Settlement';
+import Transaction from '@/models/Transaction';
+import User from '@/models/User';
+import UserSettings from '@/models/UserSettings';
+import { sendMail } from '@/lib/mailer';
+import { settlementProcessedEmail } from '@/lib/emails/settlementProcessed';
+
 export async function GET() {
   try {
     const token = cookies().get('token')?.value;
@@ -21,7 +32,11 @@ export async function GET() {
 
     await connectDB();
     const settlements = await Settlement.find({ type: 'auto', source: 'admin' }).populate('userId', 'name email').sort({ createdAt: -1 });
-    return NextResponse.json({ settlements });
+    
+    // Get held users
+    const heldUsers = await User.find({ settlementBlocked: true }).select('name email settlementBlockReason');
+    
+    return NextResponse.json({ settlements, heldUsers });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
   }
@@ -38,7 +53,7 @@ export async function POST(request) {
     }
 
     await connectDB();
-    const { action, userId, settlementId, settlementIds, enabled, spendAmount } = await request.json();
+    const { action, userId, settlementId, settlementIds, enabled, spendAmount, reason } = await request.json();
 
     // Process single settlement
     if (action === 'process' && settlementId) {
@@ -160,6 +175,27 @@ export async function POST(request) {
       });
 
       return NextResponse.json({ success: true, settlement });
+    }
+
+    // Hold user settlement
+    if (action === 'hold_settlement' && userId) {
+      const holdReason = reason?.trim() || 'Bank internal server issues';
+      await User.findByIdAndUpdate(userId, {
+        settlementBlocked: true,
+        settlementBlockReason: holdReason,
+      });
+      await Settlement.updateMany({ userId, status: 'pending' }, { status: 'paused' });
+      return NextResponse.json({ success: true, message: 'Settlement held for user' });
+    }
+
+    // Unhold user settlement
+    if (action === 'unhold_settlement' && userId) {
+      await User.findByIdAndUpdate(userId, {
+        settlementBlocked: false,
+        settlementBlockReason: null,
+      });
+      await Settlement.updateMany({ userId, status: 'paused' }, { status: 'pending' });
+      return NextResponse.json({ success: true, message: 'Settlement resumed for user' });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
