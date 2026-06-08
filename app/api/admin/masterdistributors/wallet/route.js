@@ -28,8 +28,17 @@ export async function POST(request) {
 
     if (action === 'add') {
       md.walletBalance += amount;
-      const txn = await Transaction.create({ userId: md._id, type: 'credit', amount, description: `Wallet credited by admin`, status: 'completed' });
-      
+      const utr = `UTR${Date.now()}${Math.floor(Math.random() * 900000 + 100000)}`;
+      const txn = await Transaction.create({
+        userId: md._id,
+        type: 'credit',
+        amount,
+        description: `Wallet credited by admin`,
+        status: 'completed',
+        reference: utr,
+        balanceBefore: md.walletBalance - amount,
+        balanceAfter: md.walletBalance,
+      });
       await md.save();
       
       // Send email notification (non-blocking)
@@ -51,8 +60,19 @@ export async function POST(request) {
         }
       }
     } else {
+      const balBefore = md.walletBalance;
       md.walletBalance -= amount;
-      await Transaction.create({ userId: md._id, type: 'debit', amount, description: `Wallet deducted by admin. Reason: ${remark}`, status: 'completed' });
+      const utr = `UTR${Date.now()}${Math.floor(Math.random() * 900000 + 100000)}`;
+      await Transaction.create({
+        userId: md._id,
+        type: 'debit',
+        amount,
+        description: `Wallet deducted by admin. Reason: ${remark}`,
+        status: 'completed',
+        reference: utr,
+        balanceBefore: balBefore,
+        balanceAfter: md.walletBalance,
+      });
       await md.save();
     }
 

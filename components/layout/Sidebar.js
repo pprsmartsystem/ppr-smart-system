@@ -49,8 +49,9 @@ const NAV = {
     { name: 'Users', href: '/masterdistributor/users', icon: UserGroupIcon },
     { name: 'Cards', href: '/masterdistributor/cards', icon: CreditCardIcon },
     { name: 'Wallet', href: '/masterdistributor/wallet', icon: WalletIcon },
+    { name: 'Transactions', href: '/masterdistributor/transactions', icon: DocumentChartBarIcon },
     { name: 'Settlement', href: '/masterdistributor/settlement', icon: BanknotesIcon },
-    { name: 'Reports', href: '/masterdistributor/reports', icon: DocumentChartBarIcon },
+    { name: 'Reports', href: '/masterdistributor/reports', icon: ChartBarIcon },
     { name: 'Settings', href: '/masterdistributor/settings', icon: CogIcon },
   ],
   distributor: [
