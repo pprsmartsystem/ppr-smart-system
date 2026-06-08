@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import {
   PlusIcon, TrashIcon, WalletIcon, EyeIcon, EyeSlashIcon,
-  PauseCircleIcon, PlayCircleIcon, StarIcon,
+  PauseCircleIcon, PlayCircleIcon, StarIcon, CheckBadgeIcon,
 } from '@heroicons/react/24/outline';
 import { PageHeader, StatusBadge, AdminModal, ActionBtn } from '@/components/ui/AdminComponents';
 import { MinusCircleIcon } from '@heroicons/react/24/outline';
@@ -102,6 +102,20 @@ export default function AdminMasterDistributorsPage() {
     } catch { toast.error('Error'); }
   };
 
+  const handleActivate = async (id) => {
+    if (!confirm('Activate settlement for this Master Distributor? The ₹25,000 limit will be removed.')) return;
+    try {
+      const res = await fetch('/api/admin/masterdistributors/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ masterDistributorId: id }),
+      });
+      const data = await res.json();
+      if (res.ok) { toast.success(data.message); fetchAll(); }
+      else toast.error(data.error || 'Failed');
+    } catch { toast.error('Error'); }
+  };
+
   const generatePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$';
     let p = '';
@@ -137,8 +151,8 @@ export default function AdminMasterDistributorsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                {['Name', 'Email', 'Phone', 'Wallet', 'Distributors', 'Status', 'Joined', 'Actions'].map((h, i) => (
-                  <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i === 7 ? 'text-right' : 'text-left'}`}>{h}</th>
+                {['Name', 'Email', 'Phone', 'Wallet', 'Distributors', 'Settlement', 'Status', 'Joined', 'Actions'].map((h, i) => (
+                  <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i === 8 ? 'text-right' : 'text-left'}`}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -171,11 +185,19 @@ export default function AdminMasterDistributorsPage() {
                       ? <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">On Hold</span>
                       : <StatusBadge status={md.status} />}
                   </td>
+                  <td className="py-3 px-4">
+                    {md.settlementActivated
+                      ? <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">✓ Activated</span>
+                      : <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">₹25K Limit</span>}
+                  </td>
                   <td className="py-3 px-4"><p className="text-xs text-gray-400">{new Date(md.createdAt).toLocaleDateString('en-IN')}</p></td>
                   <td className="py-3 px-4">
                     <div className="flex justify-end gap-1">
                       <ActionBtn icon={WalletIcon} onClick={() => { setSelected(md); setWalletType('add'); setShowWalletModal(true); }} color="text-green-600 hover:bg-green-50" title="Add Balance" />
                       <ActionBtn icon={MinusCircleIcon} onClick={() => { setSelected(md); setWalletType('deduct'); setShowWalletModal(true); }} color="text-orange-600 hover:bg-orange-50" title="Deduct Balance" />
+                      {!md.settlementActivated && (
+                        <ActionBtn icon={CheckBadgeIcon} onClick={() => handleActivate(md._id)} color="text-purple-600 hover:bg-purple-50" title="Activate Settlement" />
+                      )}
                       {md.isOnHold
                         ? <ActionBtn icon={PlayCircleIcon} onClick={() => handleHold(md, 'unhold')} color="text-green-600 hover:bg-green-50" title="Remove Hold" />
                         : <ActionBtn icon={PauseCircleIcon} onClick={() => handleHold(md, 'hold')} color="text-amber-600 hover:bg-amber-50" title="Place on Hold" />}

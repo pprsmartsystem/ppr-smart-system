@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import Card from '@/models/Card';
 
 export async function GET() {
   try {
@@ -22,9 +23,29 @@ export async function GET() {
     const users = await User.find({ distributorId: { $in: distributorIds }, role: 'user' })
       .select('-password')
       .populate('distributorId', 'name email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
-    return NextResponse.json({ users });
+    // Get card counts for each user
+    const userIds = users.map(u => u._id);
+    const cardCounts = await Card.aggregate([
+      { $match: { userId: { $in: userIds } } },
+      { $group: { _id: '$userId', count: { $sum: 1 } } }
+    ]);
+
+    // Map card counts to users
+    const cardCountMap = {};
+    cardCounts.forEach(({ _id, count }) => {
+      cardCountMap[_id.toString()] = count;
+    });
+
+    // Add totalCards to each user
+    const usersWithCards = users.map(user => ({
+      ...user,
+      totalCards: cardCountMap[user._id.toString()] || 0
+    }));
+
+    return NextResponse.json({ users: usersWithCards });
   } catch (error) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }

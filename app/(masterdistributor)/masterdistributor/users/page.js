@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MagnifyingGlassIcon, UsersIcon } from '@heroicons/react/24/outline';
-import { PageHeader, StatusBadge } from '@/components/ui/AdminComponents';
+import { MagnifyingGlassIcon, UsersIcon, LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/outline';
+import { PageHeader, StatusBadge, ActionBtn } from '@/components/ui/AdminComponents';
 import toast from 'react-hot-toast';
 
 export default function MasterDistributorUsersPage() {
@@ -11,11 +11,42 @@ export default function MasterDistributorUsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = () => {
+    setLoading(true);
     fetch('/api/masterdistributor/users')
       .then(r => r.json())
       .then(d => { setUsers(d.users || []); setLoading(false); })
       .catch(() => { toast.error('Failed to fetch users'); setLoading(false); });
-  }, []);
+  };
+
+  const handleBlockUnblock = async (userId, currentStatus) => {
+    const action = currentStatus === 'blocked' ? 'unblock' : 'block';
+    const confirmMsg = action === 'block' 
+      ? 'Are you sure you want to block this user? They will not be able to access their account.'
+      : 'Are you sure you want to unblock this user?';
+    
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch('/api/masterdistributor/users/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message);
+        fetchUsers();
+      } else {
+        toast.error(data.error || 'Failed to update user status');
+      }
+    } catch {
+      toast.error('Something went wrong');
+    }
+  };
 
   const filtered = users.filter(u =>
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,8 +86,8 @@ export default function MasterDistributorUsersPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/50">
-                {['Name', 'Email', 'Distributor', 'Wallet', 'Status', 'Joined'].map((h) => (
-                  <th key={h} className="py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide text-left">{h}</th>
+                {['Name', 'Email', 'Distributor', 'Wallet', 'Total Cards', 'Status', 'Joined', 'Actions'].map((h, i) => (
+                  <th key={h} className={`py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide ${i === 7 ? 'text-right' : 'text-left'}`}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -75,8 +106,38 @@ export default function MasterDistributorUsersPage() {
                       ₹{Math.abs(user.walletBalance?.toFixed(2) || 0)}
                     </p>
                   </td>
-                  <td className="py-3 px-4"><StatusBadge status={user.status} /></td>
+                  <td className="py-3 px-4">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700">
+                      {user.totalCards || 0} {user.totalCards === 1 ? 'card' : 'cards'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    {user.status === 'blocked' ? (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Blocked</span>
+                    ) : (
+                      <StatusBadge status={user.status} />
+                    )}
+                  </td>
                   <td className="py-3 px-4"><p className="text-xs text-gray-400">{new Date(user.createdAt).toLocaleDateString('en-IN')}</p></td>
+                  <td className="py-3 px-4">
+                    <div className="flex justify-end gap-1">
+                      {user.status === 'blocked' ? (
+                        <ActionBtn 
+                          icon={LockOpenIcon} 
+                          onClick={() => handleBlockUnblock(user._id, user.status)} 
+                          color="text-green-600 hover:bg-green-50" 
+                          title="Unblock User" 
+                        />
+                      ) : (
+                        <ActionBtn 
+                          icon={LockClosedIcon} 
+                          onClick={() => handleBlockUnblock(user._id, user.status)} 
+                          color="text-red-600 hover:bg-red-50" 
+                          title="Block User" 
+                        />
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

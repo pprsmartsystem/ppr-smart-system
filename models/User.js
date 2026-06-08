@@ -80,7 +80,15 @@ const userSchema = new mongoose.Schema({
   },
   settlementRate: {
     type: Number,
-    default: null, // null = use global rate (1.77%)
+    default: null,
+  },
+  settlementActivated: {
+    type: Boolean,
+    default: false,
+  },
+  settlementActivatedAt: {
+    type: Date,
+    default: null,
   },
 }, {
   timestamps: true,
@@ -88,5 +96,4 @@ const userSchema = new mongoose.Schema({
 
 userSchema.index({ role: 1, status: 1 });
 
-delete mongoose.models.User;
-export default mongoose.model('User', userSchema);
+export default mongoose.models.User || mongoose.model('User', userSchema);

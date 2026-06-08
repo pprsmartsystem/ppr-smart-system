@@ -47,6 +47,7 @@ const NAV = {
     { name: 'Dashboard', href: '/masterdistributor', icon: HomeIcon },
     { name: 'Distributors', href: '/masterdistributor/distributors', icon: BuildingOfficeIcon },
     { name: 'Users', href: '/masterdistributor/users', icon: UserGroupIcon },
+    { name: 'Cards', href: '/masterdistributor/cards', icon: CreditCardIcon },
     { name: 'Wallet', href: '/masterdistributor/wallet', icon: WalletIcon },
     { name: 'Settlement', href: '/masterdistributor/settlement', icon: BanknotesIcon },
     { name: 'Reports', href: '/masterdistributor/reports', icon: DocumentChartBarIcon },
@@ -183,9 +184,23 @@ export default function Sidebar({ userRole, userName, userEmail }) {
       {/* Footer */}
       <div className="border-t border-gray-100 p-3">
         {(!collapsed || mobile) && (
-          <div className="mb-2 px-3 py-2 bg-gray-50 rounded-xl">
-            <p className="text-xs font-semibold text-gray-800 truncate">{userName}</p>
-            <p className="text-xs text-gray-400 truncate">{userEmail}</p>
+          <div className="mb-2 px-3 py-3 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {userName?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-gray-900 truncate">{userName}</p>
+                <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-indigo-100">
+              <span className="text-xs font-medium text-indigo-600 capitalize">{userRole}</span>
+              <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs text-green-600 font-medium">Active</span>
+              </div>
+            </div>
           </div>
         )}
         <button onClick={handleLogout}

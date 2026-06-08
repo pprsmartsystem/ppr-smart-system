@@ -25,9 +25,22 @@ export async function GET() {
       source: 'masterdistributor',
     }).sort({ createdAt: -1 });
 
-    const user = await User.findById(decoded.userId).select('walletBalance settlementRate');
+    const user = await User.findById(decoded.userId).select('walletBalance settlementRate settlementActivated createdAt');
 
-    return NextResponse.json({ settlements, walletBalance: user.walletBalance, settlementRate: user.settlementRate });
+    const hoursSinceCreation = (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60);
+    const isWithin72Hours = hoursSinceCreation < 72;
+    const limitActive = isWithin72Hours && !user.settlementActivated;
+    const hoursRemaining = Math.max(0, Math.ceil(72 - hoursSinceCreation));
+
+    return NextResponse.json({
+      settlements,
+      walletBalance: user.walletBalance,
+      settlementRate: user.settlementRate,
+      settlementActivated: user.settlementActivated,
+      limitActive,
+      hoursRemaining,
+      maxAmount: limitActive ? 25000 : null,
+    });
   } catch (error) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
@@ -60,6 +73,19 @@ export async function POST(request) {
 
     if (user.walletBalance < amount) {
       return NextResponse.json({ error: 'Insufficient wallet balance' }, { status: 400 });
+    }
+
+    // 72-hour limit check: ₹25,000 max until activated
+    const hoursSinceCreation = (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60);
+    const isWithin72Hours = hoursSinceCreation < 72;
+
+    if (isWithin72Hours && !user.settlementActivated) {
+      if (amount > 25000) {
+        return NextResponse.json({
+          error: 'Settlement limit is ₹25,000 for the first 72 hours. Request activation from admin to increase limit.',
+          limitActive: true,
+        }, { status: 400 });
+      }
     }
 
     // Check for existing pending settlement

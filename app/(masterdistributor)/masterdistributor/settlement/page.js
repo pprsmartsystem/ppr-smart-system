@@ -32,6 +32,9 @@ export default function MasterDistributorSettlementPage() {
   useEffect(() => { fetchData(); }, []);
 
   const hasPending = data?.settlements?.some(s => s.status === 'pending');
+  const limitActive = data?.limitActive;
+  const hoursRemaining = data?.hoursRemaining;
+  const maxAmount = data?.maxAmount;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,6 +86,16 @@ export default function MasterDistributorSettlementPage() {
             <p className="text-purple-200 text-xs uppercase tracking-widest mb-1">Available Wallet Balance</p>
             <p className="text-4xl font-bold mb-1">₹{(data?.walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
             <p className="text-purple-300 text-xs mb-4">Settlement Fee: ₹300 per ₹1,00,000 · Min. ₹10,000 · 1 request/day</p>
+
+            {/* 72-hour limit banner */}
+            {limitActive && (
+              <div className="mb-4 bg-amber-500/20 border border-amber-400/30 rounded-xl px-4 py-3">
+                <p className="text-amber-200 text-xs font-bold uppercase tracking-wide mb-1">⚠️ Settlement Limit Active</p>
+                <p className="text-amber-100 text-sm font-semibold">Max ₹25,000 per request</p>
+                <p className="text-amber-200 text-xs mt-0.5">Limit lifts in ~{hoursRemaining}h or when admin activates your account.</p>
+              </div>
+            )}
+
             {hasPending ? (
               <div className="flex items-center gap-2 bg-yellow-500/20 border border-yellow-400/30 rounded-xl px-4 py-2.5 text-yellow-200 text-sm font-medium">
                 <ClockIcon className="w-4 h-4 flex-shrink-0" />
@@ -108,7 +121,8 @@ export default function MasterDistributorSettlementPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount (₹)</label>
               <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
-                placeholder="Enter amount (min ₹10,000)" min="10000" step="0.01" required className="input-field" />
+                placeholder={`Enter amount (min ₹10,000${limitActive ? ', max ₹25,000' : ''})`}
+                min="10000" max={limitActive ? 25000 : undefined} step="0.01" required className="input-field" />
               {parsedAmount >= 10000 && (
                 <div className="mt-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs space-y-1">
                   <div className="flex justify-between"><span className="text-gray-500">Requested</span><span className="font-semibold">₹{parsedAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
