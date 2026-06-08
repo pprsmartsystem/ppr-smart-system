@@ -48,6 +48,7 @@ const NAV = {
     { name: 'Distributors', href: '/masterdistributor/distributors', icon: BuildingOfficeIcon },
     { name: 'Users', href: '/masterdistributor/users', icon: UserGroupIcon },
     { name: 'Wallet', href: '/masterdistributor/wallet', icon: WalletIcon },
+    { name: 'Settlement', href: '/masterdistributor/settlement', icon: BanknotesIcon },
     { name: 'Reports', href: '/masterdistributor/reports', icon: DocumentChartBarIcon },
     { name: 'Settings', href: '/masterdistributor/settings', icon: CogIcon },
   ],
@@ -89,13 +90,29 @@ const NAV = {
   ],
 };
 
-const BOTTOM_NAV = [
-  { name: 'Home',   href: '/user',            icon: HomeIcon },
-  { name: 'Wallet', href: '/user/wallet',      icon: WalletIcon },
-  { name: 'Cards',  href: '/user/cards',       icon: CreditCardIcon },
-  { name: 'Settle', href: '/user/settlement',  icon: BanknotesIcon },
-  { name: 'More',   href: null,                icon: Bars3Icon },
-];
+const BOTTOM_NAV = {
+  user: [
+    { name: 'Home',   href: '/user',            icon: HomeIcon },
+    { name: 'Wallet', href: '/user/wallet',      icon: WalletIcon },
+    { name: 'Cards',  href: '/user/cards',       icon: CreditCardIcon },
+    { name: 'Settle', href: '/user/settlement',  icon: BanknotesIcon },
+    { name: 'More',   href: null,                icon: Bars3Icon },
+  ],
+  masterdistributor: [
+    { name: 'Home',     href: '/masterdistributor',              icon: HomeIcon },
+    { name: 'Distrib',  href: '/masterdistributor/distributors', icon: BuildingOfficeIcon },
+    { name: 'Users',    href: '/masterdistributor/users',        icon: UserGroupIcon },
+    { name: 'Settle',   href: '/masterdistributor/settlement',   icon: BanknotesIcon },
+    { name: 'More',     href: null,                              icon: Bars3Icon },
+  ],
+  distributor: [
+    { name: 'Home',     href: '/distributor',         icon: HomeIcon },
+    { name: 'Users',    href: '/distributor/users',   icon: UserGroupIcon },
+    { name: 'Wallet',   href: '/distributor/wallet',  icon: WalletIcon },
+    { name: 'Reports',  href: '/distributor/reports', icon: DocumentChartBarIcon },
+    { name: 'More',     href: null,                   icon: Bars3Icon },
+  ],
+};
 
 export default function Sidebar({ userRole, userName, userEmail }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -104,6 +121,8 @@ export default function Sidebar({ userRole, userName, userEmail }) {
   const router = useRouter();
   const nav = NAV[userRole] || [];
   const isUser = userRole === 'user';
+  const bottomNav = BOTTOM_NAV[userRole] || null;
+  const showBottomNav = ['user', 'masterdistributor', 'distributor'].includes(userRole);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -180,8 +199,8 @@ export default function Sidebar({ userRole, userName, userEmail }) {
 
   return (
     <>
-      {/* ── Mobile top bar (user only) ── */}
-      {isUser && (
+      {/* ── Mobile top bar ── */}
+      {showBottomNav && (
         <div className="lg:hidden fixed top-0 inset-x-0 z-40 h-14 bg-white border-b border-gray-100 flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
@@ -195,8 +214,8 @@ export default function Sidebar({ userRole, userName, userEmail }) {
         </div>
       )}
 
-      {/* ── Mobile hamburger (non-user roles) ── */}
-      {!isUser && (
+      {/* ── Mobile hamburger (other roles) ── */}
+      {!showBottomNav && (
         <button onClick={() => setDrawerOpen(true)}
           className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-xl shadow-md border border-gray-100">
           <Bars3Icon className="w-5 h-5 text-gray-600" />
@@ -246,11 +265,11 @@ export default function Sidebar({ userRole, userName, userEmail }) {
         <NavContent />
       </motion.aside>
 
-      {/* ── Mobile bottom nav (user only) ── */}
-      {isUser && (
+      {/* ── Mobile bottom nav ── */}
+      {showBottomNav && bottomNav && (
         <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-100 safe-area-pb">
           <div className="flex items-center justify-around px-1 py-1">
-            {BOTTOM_NAV.map(({ name, href, icon: Icon }) => {
+            {bottomNav.map(({ name, href, icon: Icon }) => {
               const active = href && pathname === href;
               return (
                 <button key={name}

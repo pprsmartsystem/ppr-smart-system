@@ -30,8 +30,14 @@ const settlementSchema = new mongoose.Schema({
   },
   source: {
     type: String,
-    enum: ['admin', 'user'],
+    enum: ['admin', 'user', 'masterdistributor'],
     default: 'admin',
+  },
+  bankDetails: {
+    accountHolder: String,
+    accountNumber: String,
+    ifscCode: String,
+    bankName: String,
   },
   rejectionReason: { type: String },
   processedAt: Date,

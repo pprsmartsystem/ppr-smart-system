@@ -57,7 +57,6 @@ const cardSchema = new mongoose.Schema({
 });
 
 cardSchema.index({ userId: 1 });
-cardSchema.index({ cardNumber: 1 });
 cardSchema.index({ status: 1 });
 
 export default mongoose.models.Card || mongoose.model('Card', cardSchema);

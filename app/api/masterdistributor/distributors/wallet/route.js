@@ -57,12 +57,15 @@ export async function POST(request) {
       await distributor.save();
 
       // Create transaction records
+      const ref1 = `MD-TRF-${Date.now()}-1`;
+      const ref2 = `MD-TRF-${Date.now()}-2`;
       await Transaction.create({
         userId: decoded.userId,
         type: 'debit',
         amount,
         description: `Transferred to distributor: ${distributor.name}`,
-        status: 'completed'
+        status: 'completed',
+        reference: ref1,
       });
 
       await Transaction.create({
@@ -70,7 +73,8 @@ export async function POST(request) {
         type: 'credit',
         amount,
         description: `Received from master distributor: ${masterDistributor.name}`,
-        status: 'completed'
+        status: 'completed',
+        reference: ref2,
       });
 
       return NextResponse.json({ 
@@ -92,12 +96,15 @@ export async function POST(request) {
       await masterDistributor.save();
 
       // Create transaction records
+      const ref3 = `MD-DED-${Date.now()}-1`;
+      const ref4 = `MD-DED-${Date.now()}-2`;
       await Transaction.create({
         userId: distributorId,
         type: 'debit',
         amount,
         description: `Deducted by master distributor. Reason: ${remark}`,
-        status: 'completed'
+        status: 'completed',
+        reference: ref3,
       });
 
       await Transaction.create({
@@ -105,7 +112,8 @@ export async function POST(request) {
         type: 'credit',
         amount,
         description: `Recovered from distributor: ${distributor.name}. Reason: ${remark}`,
-        status: 'completed'
+        status: 'completed',
+        reference: ref4,
       });
 
       return NextResponse.json({ 

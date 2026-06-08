@@ -38,10 +38,10 @@ export default function MasterDistributorLayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar userRole="masterdistributor" userName={user.name} userEmail={user.email} />
-      <div className="flex-1 lg:pl-0 min-w-0">
+      <div className="flex-1 lg:pl-0 min-w-0 flex flex-col h-screen overflow-hidden">
         <BroadcastBar />
         <MaintenancePopup />
-        <main className="p-4 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8 pt-16 lg:pt-4 pb-20 lg:pb-8">
           {children}
         </main>
       </div>

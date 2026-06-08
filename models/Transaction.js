@@ -31,7 +31,7 @@ const transactionSchema = new mongoose.Schema({
   },
   reference: {
     type: String,
-    unique: true,
+    sparse: true, // allows multiple null values
   },
   metadata: {
     type: mongoose.Schema.Types.Mixed,
@@ -60,6 +60,6 @@ const transactionSchema = new mongoose.Schema({
 transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ cardId: 1 });
 transactionSchema.index({ type: 1, status: 1 });
-transactionSchema.index({ reference: 1 });
+transactionSchema.index({ reference: 1 }, { sparse: true });
 
 export default mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);

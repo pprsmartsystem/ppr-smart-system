@@ -5,6 +5,8 @@ import connectDB from '@/lib/mongodb';
 import Settlement from '@/models/Settlement';
 import Transaction from '@/models/Transaction';
 import User from '@/models/User';
+import { sendMail } from '@/lib/mailer';
+import { settlementProcessedEmail } from '@/lib/emails/settlementProcessed';
 
 export async function GET() {
   try {
@@ -17,8 +19,8 @@ export async function GET() {
     }
 
     await connectDB();
-    const settlements = await Settlement.find({ source: 'user' })
-      .populate('userId', 'name email')
+    const settlements = await Settlement.find({ source: { $in: ['user', 'masterdistributor'] } })
+      .populate('userId', 'name email role')
       .sort({ createdAt: -1 });
 
     return NextResponse.json({ settlements });
@@ -42,7 +44,7 @@ export async function POST(request) {
 
     const settlement = await Settlement.findById(settlementId);
     if (!settlement) return NextResponse.json({ error: 'Settlement not found' }, { status: 404 });
-    if (settlement.source === 'admin') return NextResponse.json({ error: 'Not a user settlement' }, { status: 400 });
+    if (settlement.source === 'admin') return NextResponse.json({ error: 'Not a valid settlement' }, { status: 400 });
     if (settlement.status !== 'pending') return NextResponse.json({ error: 'Settlement already processed' }, { status: 400 });
 
     if (action === 'approve') {
@@ -59,6 +61,27 @@ export async function POST(request) {
         reference: `SETTLE-USR-${Date.now()}`,
       });
 
+      // Send approval email
+      const user = await User.findById(settlement.userId);
+      if (user && process.env.SMTP_HOST && process.env.SMTP_USER) {
+        try {
+          await sendMail({
+            to: user.email,
+            subject: '✓ Settlement Approved — PPR Smart System',
+            html: settlementProcessedEmail({
+              name: user.name,
+              amount: settlement.settlementAmount,
+              reference: settlement._id.toString(),
+              bankDetails: settlement.bankDetails,
+              date: new Date(),
+              status: 'approved',
+            }),
+          });
+        } catch (emailErr) {
+          console.error('Approval email failed:', emailErr);
+        }
+      }
+
       return NextResponse.json({ success: true, message: 'Settlement approved' });
     }
 
@@ -67,15 +90,37 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Rejection reason is required' }, { status: 400 });
       }
 
-      // Refund wallet
+      // Refund full spend amount back to wallet
       await User.findByIdAndUpdate(settlement.userId, {
-        $inc: { walletBalance: settlement.settlementAmount },
+        $inc: { walletBalance: settlement.spendAmount },
       });
 
       settlement.status = 'rejected';
       settlement.rejectionReason = reason.trim();
       settlement.processedAt = new Date();
       await settlement.save();
+
+      // Send rejection email
+      const user = await User.findById(settlement.userId);
+      if (user && process.env.SMTP_HOST && process.env.SMTP_USER) {
+        try {
+          await sendMail({
+            to: user.email,
+            subject: '❌ Settlement Rejected — PPR Smart System',
+            html: settlementProcessedEmail({
+              name: user.name,
+              amount: settlement.spendAmount,
+              reference: settlement._id.toString(),
+              bankDetails: settlement.bankDetails,
+              date: new Date(),
+              status: 'rejected',
+              reason: reason.trim(),
+            }),
+          });
+        } catch (emailErr) {
+          console.error('Rejection email failed:', emailErr);
+        }
+      }
 
       return NextResponse.json({ success: true, message: 'Settlement rejected and amount refunded' });
     }

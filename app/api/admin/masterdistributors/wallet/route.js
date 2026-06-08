@@ -4,6 +4,8 @@ import { verifyToken } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Transaction from '@/models/Transaction';
+import { sendMail } from '@/lib/mailer';
+import { walletLoadingEmail } from '@/lib/emails/walletLoading';
 
 export async function POST(request) {
   try {
@@ -26,16 +28,37 @@ export async function POST(request) {
 
     if (action === 'add') {
       md.walletBalance += amount;
-      await Transaction.create({ userId: md._id, type: 'credit', amount, description: `Wallet credited by admin`, status: 'completed' });
+      const txn = await Transaction.create({ userId: md._id, type: 'credit', amount, description: `Wallet credited by admin`, status: 'completed' });
+      
+      await md.save();
+      
+      // Send email notification (non-blocking)
+      if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+        try {
+          await sendMail({
+            to: md.email,
+            subject: '✓ Wallet Loading Initiated — PPR Smart System',
+            html: walletLoadingEmail({
+              name: md.name,
+              amount,
+              newBalance: md.walletBalance,
+              reference: txn._id.toString(),
+              date: new Date(),
+            }),
+          });
+        } catch (emailErr) {
+          console.error('Email notification failed:', emailErr);
+        }
+      }
     } else {
       md.walletBalance -= amount;
       await Transaction.create({ userId: md._id, type: 'debit', amount, description: `Wallet deducted by admin. Reason: ${remark}`, status: 'completed' });
+      await md.save();
     }
-
-    await md.save();
 
     return NextResponse.json({ success: true, message: `Balance ${action === 'add' ? 'added' : 'deducted'} successfully` });
   } catch (err) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    console.error('Wallet operation error:', err);
+    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
 }

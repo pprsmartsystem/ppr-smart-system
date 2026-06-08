@@ -32,7 +32,7 @@ export default function DistributorLayout({ children }) {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar userRole={user.role} userName={user.name} userEmail={user.email} />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-4 lg:p-8">{children}</div>
+        <div className="p-4 lg:p-8 pt-16 lg:pt-4 pb-20 lg:pb-8">{children}</div>
       </main>
     </div>
   );

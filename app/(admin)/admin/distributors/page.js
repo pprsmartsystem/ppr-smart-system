@@ -27,10 +27,41 @@ export default function AdminDistributorsPage() {
   const [walletAmount, setWalletAmount] = useState('');
   const [deductData, setDeductData] = useState({ amount: '', remark: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [masterDistributors, setMasterDistributors] = useState([]);
+  const [selectedMasterId, setSelectedMasterId] = useState('');
 
   useEffect(() => {
     fetchDistributors();
+    fetchMasterDistributors();
   }, []);
+
+  const fetchMasterDistributors = async () => {
+    try {
+      const res = await fetch('/api/admin/masterdistributors');
+      if (res.ok) setMasterDistributors((await res.json()).masterDistributors || []);
+    } catch {}
+  };
+
+  const handleTransferToMaster = async () => {
+    try {
+      const res = await fetch('/api/admin/distributors/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ distributorId: selectedDistributor._id, masterDistributorId: selectedMasterId || null }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message);
+        setShowTransferModal(false);
+        setSelectedDistributor(null);
+        setSelectedMasterId('');
+        fetchDistributors();
+      } else {
+        toast.error(data.error || 'Failed');
+      }
+    } catch { toast.error('Error transferring'); }
+  };
 
   const fetchDistributors = async () => {
     try {
@@ -263,6 +294,18 @@ export default function AdminDistributorsPage() {
                         </button>
                       )}
                       <ActionBtn icon={TrashIcon} onClick={() => handleDeleteDistributor(dist._id)} color="text-red-600 hover:bg-red-50" title="Delete" />
+                      {/* Transfer to Master Distributor */}
+                      <button
+                        onClick={() => { setSelectedDistributor(dist); setSelectedMasterId(dist.masterDistributorId || ''); setShowTransferModal(true); }}
+                        title="Assign to Master Distributor"
+                        className={`p-1.5 rounded-lg transition-colors text-xs font-bold ${
+                          dist.masterDistributorId
+                            ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                            : 'text-gray-400 hover:bg-purple-50 hover:text-purple-600'
+                        }`}
+                      >
+                        MD
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -514,6 +557,37 @@ export default function AdminDistributorsPage() {
                 <PauseCircleIcon className="w-4 h-4" /> Place on Hold
               </button>
             </div>
+          </div>
+        </AdminModal>
+      )}
+
+      {/* Transfer to Master Distributor Modal */}
+      {showTransferModal && selectedDistributor && (
+        <AdminModal
+          title="Assign to Master Distributor"
+          subtitle={`Assign ${selectedDistributor.name} to a Master Distributor`}
+          onClose={() => { setShowTransferModal(false); setSelectedDistributor(null); setSelectedMasterId(''); }}
+        >
+          <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-1.5 text-sm">
+            {[['Distributor', selectedDistributor.name], ['Email', selectedDistributor.email], ['Current MD', selectedDistributor.masterDistributorId ? (masterDistributors.find(m => m._id === selectedDistributor.masterDistributorId?.toString() || m._id === selectedDistributor.masterDistributorId)?.name || 'Assigned') : 'None']].map(([k, v]) => (
+              <div key={k} className="flex justify-between"><span className="text-gray-500">{k}</span><span className="font-semibold">{v}</span></div>
+            ))}
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Master Distributor</label>
+            <select value={selectedMasterId} onChange={e => setSelectedMasterId(e.target.value)} className="input-field">
+              <option value="">-- Unlink from Master Distributor --</option>
+              {masterDistributors.map(md => (
+                <option key={md._id} value={md._id}>{md.name} ({md.email})</option>
+              ))}
+            </select>
+          </div>
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 mb-4">
+            All distributor data and users will remain intact after transfer.
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => { setShowTransferModal(false); setSelectedDistributor(null); setSelectedMasterId(''); }} className="flex-1 btn-secondary">Cancel</button>
+            <button onClick={handleTransferToMaster} className="flex-1 py-3 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700">Assign</button>
           </div>
         </AdminModal>
       )}

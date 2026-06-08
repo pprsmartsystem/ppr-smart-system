@@ -62,10 +62,16 @@ export default function UserSettlementsPage() {
             {pending.map((s) => (
               <div key={s._id} className="flex items-center gap-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900">{s.userId?.name}</p>
+                  <p className="font-semibold text-gray-900">{s.userId?.name} {s.userId?.role === 'masterdistributor' && <span className="ml-1 text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">Master Distributor</span>}</p>
                   <p className="text-sm text-gray-500">{s.userId?.email}</p>
                   <p className="text-sm text-gray-700 mt-1">
-                    Amount: <span className="font-bold text-gray-900">₹{s.settlementAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    Spend: <span className="font-bold text-gray-900">₹{s.spendAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    {s.userId?.role === 'masterdistributor' ? (
+                      <> · Fee (₹300/₹1L): <span className="text-red-600 font-semibold">₹{(s.spendAmount - s.settlementAmount)?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></>
+                    ) : s.settlementRate > 0 ? (
+                      <> · Deduction ({s.settlementRate}%): <span className="text-red-600 font-semibold">₹{(s.spendAmount - s.settlementAmount)?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></>
+                    ) : null}
+                    {' '}· To Credit: <span className="font-bold text-green-700">₹{s.settlementAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </p>
                   {s.scheduledFor && (
                     <p className="text-xs text-blue-600 mt-0.5">
@@ -73,6 +79,12 @@ export default function UserSettlementsPage() {
                     </p>
                   )}
                   <p className="text-xs text-gray-400 mt-0.5">Requested: {new Date(s.createdAt).toLocaleString('en-IN')}</p>
+                  {s.bankDetails?.bankName && (
+                    <p className="text-xs text-blue-600 mt-0.5">Bank: {s.bankDetails.bankName} · A/C ••••{s.bankDetails.accountNumber?.slice(-4)} · IFSC: {s.bankDetails.ifscCode}</p>
+                  )}
+                  {s.bankDetails?.bankName && (
+                    <p className="text-xs text-blue-600 mt-0.5">Bank: {s.bankDetails.bankName} · A/C ••••{s.bankDetails.accountNumber?.slice(-4)} · IFSC: {s.bankDetails.ifscCode}</p>
+                  )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <button onClick={() => handleAction('approve', s._id)} disabled={loading}

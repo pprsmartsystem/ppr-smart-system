@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Card from '@/models/Card';
 import Transaction from '@/models/Transaction';
+import Settlement from '@/models/Settlement';
 
 export async function GET() {
   try {
@@ -54,6 +55,30 @@ export async function GET() {
     const activeDistributors = distributors.filter(d => !d.isOnHold && d.status === 'approved').length;
     const heldDistributors = distributors.filter(d => d.isOnHold || d.status === 'blocked').length;
 
+    // Get settlement statistics
+    const settlements = await Settlement.find({ 
+      userId: decoded.userId,
+      source: 'masterdistributor'
+    });
+
+    const totalSettlements = settlements.length;
+    const pendingSettlements = settlements.filter(s => s.status === 'pending').length;
+    const approvedSettlements = settlements.filter(s => s.status === 'processed').length;
+    const rejectedSettlements = settlements.filter(s => s.status === 'rejected').length;
+    const totalSettledAmount = settlements
+      .filter(s => s.status === 'processed')
+      .reduce((sum, s) => sum + (s.settlementAmount || 0), 0);
+
+    // Check if settlement available today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todaySettlement = await Settlement.findOne({
+      userId: decoded.userId,
+      source: 'masterdistributor',
+      createdAt: { $gte: today },
+    });
+    const canSettleToday = !todaySettlement && !masterDistributor.isOnHold;
+
     return NextResponse.json({
       walletBalance: masterDistributor.walletBalance || 0,
       totalDistributors: distributors.length,
@@ -61,7 +86,14 @@ export async function GET() {
       heldDistributors,
       totalUsers: users.length,
       totalCards,
-      totalTransactions
+      totalTransactions,
+      // Settlement stats
+      totalSettlements,
+      pendingSettlements,
+      approvedSettlements,
+      rejectedSettlements,
+      totalSettledAmount,
+      canSettleToday,
     });
   } catch (error) {
     console.error('Master Distributor Dashboard Error:', error);

@@ -35,6 +35,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [pieData, setPieData] = useState([]);
+  const [pendingSettlements, setPendingSettlements] = useState(0);
   const [loading, setLoading] = useState(true);
   const [now] = useState(new Date());
 
@@ -49,6 +50,16 @@ export default function AdminDashboard() {
         }
       })
       .finally(() => setLoading(false));
+    
+    // Fetch pending settlements
+    fetch('/api/admin/user-settlements')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.settlements) {
+          const pending = data.settlements.filter(s => s.status === 'pending').length;
+          setPendingSettlements(pending);
+        }
+      });
   }, []);
 
   const greeting = now.getHours() < 12 ? 'Good Morning' : now.getHours() < 17 ? 'Good Afternoon' : 'Good Evening';
@@ -73,6 +84,30 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 pb-8 max-w-7xl mx-auto">
+
+      {/* Pending Settlement Alert */}
+      {pendingSettlements > 0 && (
+        <motion.div {...fade(0)}>
+          <Link href="/admin/user-settlements"
+            className="flex items-center gap-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 hover:from-amber-600 hover:to-orange-600 transition-all group shadow-lg">
+            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 animate-pulse">
+              <ClockIcon className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="text-white font-bold text-sm">
+                {pendingSettlements} Settlement Request{pendingSettlements !== 1 ? 's' : ''} Pending
+              </p>
+              <p className="text-amber-100 text-xs mt-0.5">
+                Master Distributor & User settlements awaiting your approval
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-white flex-shrink-0">
+              <span className="text-xs font-semibold">Review Now</span>
+              <ChevronRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+        </motion.div>
+      )}
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <motion.div {...fade(0)}>
