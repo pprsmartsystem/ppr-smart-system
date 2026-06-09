@@ -9,17 +9,6 @@ import UserSettings from '@/models/UserSettings';
 import { sendMail } from '@/lib/mailer';
 import { settlementProcessedEmail } from '@/lib/emails/settlementProcessed';
 
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import Settlement from '@/models/Settlement';
-import Transaction from '@/models/Transaction';
-import User from '@/models/User';
-import UserSettings from '@/models/UserSettings';
-import { sendMail } from '@/lib/mailer';
-import { settlementProcessedEmail } from '@/lib/emails/settlementProcessed';
-
 export async function GET() {
   try {
     const token = cookies().get('token')?.value;
