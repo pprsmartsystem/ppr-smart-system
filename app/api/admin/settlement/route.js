@@ -21,11 +21,8 @@ export async function GET() {
 
     await connectDB();
     const settlements = await Settlement.find({ type: 'auto', source: 'admin' }).populate('userId', 'name email').sort({ createdAt: -1 });
-    
-    // Get held users
-    const heldUsers = await User.find({ settlementBlocked: true }).select('name email settlementBlockReason');
-    
-    return NextResponse.json({ settlements, heldUsers });
+
+    return NextResponse.json({ settlements });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
   }
@@ -164,27 +161,6 @@ export async function POST(request) {
       });
 
       return NextResponse.json({ success: true, settlement });
-    }
-
-    // Hold user settlement
-    if (action === 'hold_settlement' && userId) {
-      const holdReason = reason?.trim() || 'Bank internal server issues';
-      await User.findByIdAndUpdate(userId, {
-        settlementBlocked: true,
-        settlementBlockReason: holdReason,
-      });
-      await Settlement.updateMany({ userId, status: 'pending' }, { status: 'paused' });
-      return NextResponse.json({ success: true, message: 'Settlement held for user' });
-    }
-
-    // Unhold user settlement
-    if (action === 'unhold_settlement' && userId) {
-      await User.findByIdAndUpdate(userId, {
-        settlementBlocked: false,
-        settlementBlockReason: null,
-      });
-      await Settlement.updateMany({ userId, status: 'paused' }, { status: 'pending' });
-      return NextResponse.json({ success: true, message: 'Settlement resumed for user' });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

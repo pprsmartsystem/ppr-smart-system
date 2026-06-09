@@ -2,16 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { PlusIcon, TrashIcon, CheckIcon, ClockIcon, BoltIcon, ArrowPathIcon, NoSymbolIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CheckIcon, ClockIcon, BoltIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 export default function AdminSettlementPage() {
   const [settlements, setSettlements] = useState([]);
   const [users, setUsers] = useState([]);
-  const [heldUsers, setHeldUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [showHoldModal, setShowHoldModal] = useState(false);
-  const [holdForm, setHoldForm] = useState({ userId: '', reason: 'Due to bank internal server issues' });
   const [manualSettlement, setManualSettlement] = useState({ userId: '', spendAmount: '' });
   const [selectedPending, setSelectedPending] = useState([]);
   const [selectedProcessed, setSelectedProcessed] = useState([]);
@@ -74,7 +71,7 @@ export default function AdminSettlementPage() {
 
   const fetchSettlements = async () => {
     const res = await fetch('/api/admin/settlement');
-    if (res.ok) { const data = await res.json(); setSettlements(data.settlements || []); setHeldUsers(data.heldUsers || []); }
+    if (res.ok) { const data = await res.json(); setSettlements(data.settlements || []); }
   };
 
   const fetchUsers = async () => {
@@ -152,34 +149,6 @@ export default function AdminSettlementPage() {
     } catch { toast.error('Failed to create'); }
   };
 
-  const handleHoldSettlement = async (e) => {
-    e.preventDefault();
-    if (!holdForm.userId) { toast.error('Please select a user'); return; }
-    try {
-      const res = await fetch('/api/admin/settlement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'hold_settlement', userId: holdForm.userId, reason: holdForm.reason }),
-      });
-      const data = await res.json();
-      if (res.ok) { toast.success(data.message); setShowHoldModal(false); setHoldForm({ userId: '', reason: 'Due to bank internal server issues' }); fetchSettlements(); }
-      else toast.error(data.error || 'Failed');
-    } catch { toast.error('Failed'); }
-  };
-
-  const handleUnholdSettlement = async (userId) => {
-    try {
-      const res = await fetch('/api/admin/settlement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'unhold_settlement', userId }),
-      });
-      const data = await res.json();
-      if (res.ok) { toast.success(data.message); fetchSettlements(); }
-      else toast.error(data.error || 'Failed');
-    } catch { toast.error('Failed'); }
-  };
-
   const togglePending = (id) => setSelectedPending(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
   const toggleAllPending = () => setSelectedPending(selectedPending.length === pending.length ? [] : pending.map(s => s._id));
   const toggleProcessed = (id) => setSelectedProcessed(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
@@ -248,43 +217,6 @@ export default function AdminSettlementPage() {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Hold Settlement Section */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">Hold Settlement</h2>
-            <p className="text-sm text-gray-400 mt-0.5">Block settlement for a specific user</p>
-          </div>
-          <button onClick={() => setShowHoldModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-xl hover:bg-orange-700 transition-colors">
-            <NoSymbolIcon className="w-4 h-4" /> Hold User Settlement
-          </button>
-        </div>
-
-        {heldUsers.length === 0 ? (
-          <p className="text-center text-gray-400 py-6 text-sm">No users with held settlements</p>
-        ) : (
-          <div className="space-y-3">
-            {heldUsers.map(u => (
-              <div key={u._id} className="flex items-center gap-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-                  <NoSymbolIcon className="w-5 h-5 text-orange-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{u.name}</p>
-                  <p className="text-xs text-gray-500">{u.email}</p>
-                  <p className="text-xs text-orange-700 mt-0.5">Reason: {u.settlementBlockReason}</p>
-                </div>
-                <button onClick={() => handleUnholdSettlement(u._id)}
-                  className="px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 transition-colors flex-shrink-0">
-                  Resume
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Pending */}
@@ -371,38 +303,6 @@ export default function AdminSettlementPage() {
           <p className="text-center text-gray-400 py-8">No processed settlements</p>
         )}
       </div>
-
-      {/* Hold Settlement Modal */}
-      {showHoldModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Hold Settlement</h2>
-            <p className="text-sm text-gray-400 mb-5">User's pending settlements will be paused.</p>
-            <form onSubmit={handleHoldSettlement} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Select User <span className="text-red-500">*</span></label>
-                <select value={holdForm.userId} onChange={e => setHoldForm(f => ({ ...f, userId: e.target.value }))}
-                  className="input-field" required>
-                  <option value="">-- Select a user --</option>
-                  {users.filter(u => !u.settlementBlocked).map(u => (
-                    <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason <span className="text-red-500">*</span></label>
-                <textarea value={holdForm.reason} onChange={e => setHoldForm(f => ({ ...f, reason: e.target.value }))}
-                  className="input-field resize-none" rows={3} required />
-              </div>
-              <div className="flex gap-3">
-                <button type="button" onClick={() => { setShowHoldModal(false); setHoldForm({ userId: '', reason: 'Due to bank internal server issues' }); }}
-                  className="flex-1 btn-secondary">Cancel</button>
-                <button type="submit" className="flex-1 py-3 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700">Hold Settlement</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Create Modal */}
       {showModal && (

@@ -23,7 +23,9 @@ export async function GET() {
       .populate('userId', 'name email role')
       .sort({ createdAt: -1 });
 
-    return NextResponse.json({ settlements });
+    const heldUsers = await User.find({ settlementBlocked: true }).select('name email settlementBlockReason');
+
+    return NextResponse.json({ settlements, heldUsers });
   } catch {
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
   }
@@ -40,7 +42,7 @@ export async function POST(request) {
     }
 
     await connectDB();
-    const { action, settlementId, reason } = await request.json();
+    const { action, settlementId, reason, userId } = await request.json();
 
     const settlement = await Settlement.findById(settlementId);
     if (!settlement) return NextResponse.json({ error: 'Settlement not found' }, { status: 404 });
@@ -123,6 +125,33 @@ export async function POST(request) {
       }
 
       return NextResponse.json({ success: true, message: 'Settlement rejected and amount refunded' });
+    }
+
+    if (action === 'hold_settlement') {
+      if (!userId) return NextResponse.json({ error: 'Please select a user' }, { status: 400 });
+      if (!reason?.trim()) return NextResponse.json({ error: 'Reason is required' }, { status: 400 });
+      await User.findByIdAndUpdate(userId, {
+        settlementBlocked: true,
+        settlementBlockReason: reason.trim(),
+      });
+      await Settlement.updateMany(
+        { userId, source: { $in: ['user', 'masterdistributor'] }, status: 'pending' },
+        { status: 'paused' }
+      );
+      return NextResponse.json({ success: true, message: 'Settlement held for user' });
+    }
+
+    if (action === 'unhold_settlement') {
+      if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+      await User.findByIdAndUpdate(userId, {
+        settlementBlocked: false,
+        settlementBlockReason: null,
+      });
+      await Settlement.updateMany(
+        { userId, source: { $in: ['user', 'masterdistributor'] }, status: 'paused' },
+        { status: 'pending' }
+      );
+      return NextResponse.json({ success: true, message: 'Settlement resumed for user' });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
