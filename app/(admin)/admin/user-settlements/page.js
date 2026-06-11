@@ -186,23 +186,74 @@ export default function UserSettlementsPage() {
             {history.map((s) => (
               <div key={s._id} className={`p-4 rounded-xl border ${s.status === 'processed' ? 'bg-green-50 border-green-200' : s.status === 'paused' ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-200'}`}>
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-gray-900">{s.userId?.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="font-semibold text-gray-900">{s.userId?.name}</p>
+                      {s.userId?.role === 'masterdistributor' && (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">Master Distributor</span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500">{s.userId?.email}</p>
-                    <p className="text-sm text-gray-700 mt-1">Amount: <span className="font-bold">₹{s.settlementAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></p>
-                    {s.status === 'rejected' && s.rejectionReason && (
-                      <p className="text-sm text-red-600 mt-1">Reason: {s.rejectionReason}</p>
+
+                    {/* Amount details */}
+                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5">
+                      <p className="text-sm text-gray-700">
+                        Requested: <span className="font-bold text-gray-900">₹{s.spendAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        Credited: <span className="font-bold text-green-700">₹{s.settlementAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </p>
+                    </div>
+
+                    {/* Bank Details — full account number */}
+                    {s.bankDetails?.accountNumber && (
+                      <div className="mt-1.5 p-2.5 bg-white/70 rounded-lg border border-gray-200 inline-block">
+                        <p className="text-xs font-semibold text-gray-700">
+                          {s.bankDetails.bankName}
+                          {s.bankDetails.ifscCode && <span className="text-gray-400 font-normal"> · IFSC: {s.bankDetails.ifscCode}</span>}
+                        </p>
+                        <p className="text-xs text-indigo-700 font-mono font-bold mt-0.5">
+                          A/C: {s.bankDetails.accountNumber}
+                        </p>
+                        {s.bankDetails.accountHolder && (
+                          <p className="text-xs text-gray-500 mt-0.5">{s.bankDetails.accountHolder}</p>
+                        )}
+                      </div>
                     )}
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {s.status === 'processed' ? 'Approved' : s.status === 'paused' ? 'On Hold' : 'Rejected'}: {s.processedAt ? new Date(s.processedAt).toLocaleString('en-IN') : new Date(s.createdAt).toLocaleString('en-IN')}
-                    </p>
+
+                    {/* Rejection reason */}
+                    {s.status === 'rejected' && s.rejectionReason && (
+                      <p className="text-xs text-red-600 mt-1.5">Reason: {s.rejectionReason}</p>
+                    )}
+
+                    {/* Timestamps */}
+                    <div className="flex flex-wrap gap-x-4 mt-1.5">
+                      <p className="text-xs text-gray-400">
+                        🗓 Requested: {new Date(s.createdAt).toLocaleString('en-IN', {
+                          day: 'numeric', month: 'short', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit', hour12: true,
+                        })}
+                      </p>
+                      {s.processedAt && (
+                        <p className="text-xs text-gray-400">
+                          ✓ {s.status === 'processed' ? 'Approved' : s.status === 'paused' ? 'Held' : 'Rejected'}: {new Date(s.processedAt).toLocaleString('en-IN', {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit', hour12: true,
+                          })}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  {s.status === 'processed'
-                    ? <span className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full whitespace-nowrap">Approved</span>
-                    : s.status === 'paused'
-                    ? <span className="px-2.5 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-full whitespace-nowrap">On Hold</span>
-                    : <span className="px-2.5 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full whitespace-nowrap">Rejected</span>
-                  }
+
+                  {/* Status badge */}
+                  <div className="flex-shrink-0">
+                    {s.status === 'processed'
+                      ? <span className="px-2.5 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full">Approved</span>
+                      : s.status === 'paused'
+                      ? <span className="px-2.5 py-1 text-xs font-semibold bg-orange-100 text-orange-700 rounded-full">On Hold</span>
+                      : <span className="px-2.5 py-1 text-xs font-semibold bg-red-100 text-red-700 rounded-full">Rejected</span>
+                    }
+                  </div>
                 </div>
               </div>
             ))}
