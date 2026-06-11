@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Card from '@/models/Card';
 import Transaction from '@/models/Transaction';
+import KYC from '@/models/KYC';
 
 export async function GET(request) {
   try {
@@ -23,53 +24,137 @@ export async function GET(request) {
     const dateFilter = {};
     if (from) dateFilter.$gte = new Date(from);
     if (to) { const toDate = new Date(to); toDate.setHours(23, 59, 59, 999); dateFilter.$lte = toDate; }
+    const hasDateFilter = Object.keys(dateFilter).length > 0;
 
-    // Get all distributors under this master distributor
+    // Get all distributors
     const distributors = await User.find({
       masterDistributorId: decoded.userId,
       role: 'distributor',
-      ...(Object.keys(dateFilter).length ? { createdAt: dateFilter } : {}),
-    }).select('-password');
+    }).select('-password').lean();
 
     const distributorIds = distributors.map(d => d._id);
 
     // Get all users under these distributors
-    const users = await User.find({ distributorId: { $in: distributorIds }, role: 'user' });
+    const users = await User.find({
+      distributorId: { $in: distributorIds },
+      role: 'user',
+      ...(hasDateFilter ? { createdAt: dateFilter } : {}),
+    }).select('_id distributorId walletBalance status name email createdAt').lean();
+
     const userIds = users.map(u => u._id);
 
-    // Get total cards and transactions
-    const totalCards = await Card.countDocuments({ userId: { $in: userIds } });
-    const txnFilter = { userId: { $in: userIds }, ...(Object.keys(dateFilter).length ? { createdAt: dateFilter } : {}) };
-    const transactions = await Transaction.find(txnFilter);
-    const totalVolume = transactions.reduce((sum, t) => sum + (t.type === 'debit' ? t.amount : 0), 0);
+    // Bulk fetch cards, transactions, KYC
+    const allCards = await Card.find({ userId: { $in: userIds } }).select('userId status').lean();
+    
+    const txnQuery = { userId: { $in: userIds }, ...(hasDateFilter ? { createdAt: dateFilter } : {}) };
+    const allTransactions = await Transaction.find(txnQuery).select('userId type amount').lean();
+
+    const kycList = await KYC.find({ userId: { $in: userIds } }).select('userId status').lean();
+
+    // Build lookup maps
+    const cardsByUser = {};
+    allCards.forEach(c => {
+      const uid = c.userId.toString();
+      cardsByUser[uid] = (cardsByUser[uid] || 0) + 1;
+    });
+
+    const txnsByUser = {};
+    allTransactions.forEach(t => {
+      const uid = t.userId.toString();
+      if (!txnsByUser[uid]) txnsByUser[uid] = { count: 0, credit: 0, debit: 0 };
+      txnsByUser[uid].count++;
+      if (t.type === 'credit') txnsByUser[uid].credit += t.amount;
+      else txnsByUser[uid].debit += t.amount;
+    });
+
+    const kycByUser = {};
+    kycList.forEach(k => { kycByUser[k.userId.toString()] = k.status; });
 
     // Build distributor breakdown
-    const distributorBreakdown = await Promise.all(
-      distributors.map(async (dist) => {
-        const distUsers = await User.find({ distributorId: dist._id, role: 'user' });
-        const distUserIds = distUsers.map(u => u._id);
-        const cardCount = await Card.countDocuments({ userId: { $in: distUserIds } });
-        const txnCount = await Transaction.countDocuments({ userId: { $in: distUserIds } });
-        return {
-          _id: dist._id,
-          name: dist.name,
-          email: dist.email,
-          walletBalance: dist.walletBalance || 0,
-          userCount: distUsers.length,
-          cardCount,
-          transactionCount: txnCount,
-        };
-      })
-    );
+    const distUserMap = {};
+    users.forEach(u => {
+      const did = u.distributorId?.toString();
+      if (!distUserMap[did]) distUserMap[did] = [];
+      distUserMap[did].push(u);
+    });
+
+    const distributorBreakdown = distributors.map(dist => {
+      const distUsers = distUserMap[dist._id.toString()] || [];
+      const distUserIds = distUsers.map(u => u._id.toString());
+
+      let txnCount = 0, creditVol = 0, debitVol = 0;
+      distUserIds.forEach(uid => {
+        if (txnsByUser[uid]) {
+          txnCount += txnsByUser[uid].count;
+          creditVol += txnsByUser[uid].credit;
+          debitVol += txnsByUser[uid].debit;
+        }
+      });
+
+      const cardCount = distUserIds.reduce((s, uid) => s + (cardsByUser[uid] || 0), 0);
+      const activeUserCount = distUsers.filter(u => u.status === 'approved').length;
+
+      return {
+        _id: dist._id.toString(),
+        name: dist.name,
+        email: dist.email,
+        status: dist.status,
+        isOnHold: dist.isOnHold,
+        walletBalance: dist.walletBalance || 0,
+        createdAt: dist.createdAt,
+        userCount: distUsers.length,
+        activeUserCount,
+        cardCount,
+        transactionCount: txnCount,
+        transactionVolume: debitVol,
+        creditVolume: creditVol,
+        debitVolume: debitVol,
+      };
+    });
+
+    // Build user breakdown
+    const distNameMap = {};
+    distributors.forEach(d => { distNameMap[d._id.toString()] = d.name; });
+
+    const userBreakdown = users.map(u => {
+      const uid = u._id.toString();
+      return {
+        _id: uid,
+        name: u.name,
+        email: u.email,
+        status: u.status,
+        walletBalance: u.walletBalance || 0,
+        distributorId: u.distributorId?.toString(),
+        distributorName: distNameMap[u.distributorId?.toString()] || '—',
+        cardCount: cardsByUser[uid] || 0,
+        transactionCount: txnsByUser[uid]?.count || 0,
+        kycStatus: kycByUser[uid] || null,
+        createdAt: u.createdAt,
+      };
+    });
+
+    // Global transaction stats
+    const totalCredit = allTransactions.filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
+    const totalDebit = allTransactions.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
+    const activeTransactingUsers = Object.keys(txnsByUser).length;
+    const avgTransactionPerUser = userIds.length > 0
+      ? Math.round((totalCredit + totalDebit) / userIds.length)
+      : 0;
 
     return NextResponse.json({
       totalDistributors: distributors.length,
       totalUsers: users.length,
-      totalCards,
-      totalTransactions: transactions.length,
-      totalVolume,
+      totalCards: allCards.length,
+      totalTransactions: allTransactions.length,
+      totalVolume: totalDebit,
+      totalCredit,
+      totalDebit,
+      activeTransactingUsers,
+      avgTransactionPerUser,
       distributorBreakdown,
+      userBreakdown,
     });
+
   } catch (error) {
     console.error('Reports Error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
