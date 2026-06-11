@@ -24,7 +24,15 @@ export async function POST(request) {
       );
     }
 
-    // Check if account is on hold FIRST (before general status check)
+    // Check if account is blocked
+    if (user.status === 'blocked') {
+      return NextResponse.json(
+        { success: false, message: 'Your account has been blocked. Please contact admin.' },
+        { status: 403 }
+      );
+    }
+
+    // Check if account is on hold
     if (user.isOnHold) {
       return NextResponse.json(
         { success: false, message: `Your account is temporarily on hold${user.holdReason ? '. Reason: ' + user.holdReason : '. Please contact admin.'}` },
@@ -32,9 +40,10 @@ export async function POST(request) {
       );
     }
 
+    // Check if account is approved
     if (user.status !== 'approved') {
       return NextResponse.json(
-        { success: false, message: 'Your account is pending approval' },
+        { success: false, message: 'Your account is pending approval. Please wait for admin approval.' },
         { status: 403 }
       );
     }

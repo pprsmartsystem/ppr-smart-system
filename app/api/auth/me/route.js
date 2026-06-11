@@ -34,6 +34,21 @@ export async function GET() {
       );
     }
 
+    // Kick out blocked or held users immediately
+    if (user.status === 'blocked') {
+      return NextResponse.json(
+        { message: 'Your account has been blocked. Please contact admin.' },
+        { status: 403 }
+      );
+    }
+
+    if (user.isOnHold) {
+      return NextResponse.json(
+        { message: `Your account is on hold${user.holdReason ? '. Reason: ' + user.holdReason : '.'}` },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json({
       id: user._id,
       name: user.name,
