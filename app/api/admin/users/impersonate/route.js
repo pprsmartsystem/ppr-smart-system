@@ -8,13 +8,12 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
-    // Verify admin
     const token = cookies().get('token')?.value;
-    if (!token) return NextResponse.redirect(new URL('/login', request.url));
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const decoded = verifyToken(token);
     if (!decoded || decoded.role !== 'admin') {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -25,7 +24,7 @@ export async function GET(request) {
     const user = await User.findById(userId).lean();
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    // Generate a short-lived token for the target user (1 hour)
+    // Generate 1-hour token for target user
     const impersonateToken = generateToken({
       userId: user._id.toString(),
       email: user.email,
@@ -33,19 +32,13 @@ export async function GET(request) {
       impersonatedBy: decoded.userId,
     });
 
-    // Redirect to user's dashboard with the token set as cookie
-    const redirectUrl = new URL(`/${user.role}`, request.url);
-    const response = NextResponse.redirect(redirectUrl);
-
-    response.cookies.set('token', impersonateToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60, // 1 hour
-      path: '/',
+    return NextResponse.json({
+      success: true,
+      token: impersonateToken,
+      role: user.role,
+      redirectUrl: `/${user.role}`,
     });
 
-    return response;
   } catch (err) {
     console.error('[impersonate]', err.message);
     return NextResponse.json({ error: 'Failed to impersonate' }, { status: 500 });

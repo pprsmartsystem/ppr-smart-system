@@ -193,7 +193,7 @@ export default function AdminMasterDistributorsPage() {
                   <td className="py-3 px-4"><p className="text-xs text-gray-400">{new Date(md.createdAt).toLocaleDateString('en-IN')}</p></td>
                   <td className="py-3 px-4">
                     <div className="flex justify-end gap-1">
-                      <ActionBtn icon={EyeIcon} onClick={() => window.open(`/api/admin/users/impersonate?userId=${md._id}`, '_blank')} color="text-indigo-600 hover:bg-indigo-50" title="View as Master Distributor" />
+                      <ActionBtn icon={EyeIcon} onClick={() => window.open(`/impersonate?userId=${md._id}`, '_blank')} color="text-indigo-600 hover:bg-indigo-50" title="View as Master Distributor" />
                       <ActionBtn icon={WalletIcon} onClick={() => { setSelected(md); setWalletType('add'); setShowWalletModal(true); }} color="text-green-600 hover:bg-green-50" title="Add Balance" />
                       <ActionBtn icon={MinusCircleIcon} onClick={() => { setSelected(md); setWalletType('deduct'); setShowWalletModal(true); }} color="text-orange-600 hover:bg-orange-50" title="Deduct Balance" />
                       {!md.settlementActivated && (
