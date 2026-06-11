@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function ImpersonatePage() {
+function ImpersonateContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -13,9 +13,8 @@ export default function ImpersonatePage() {
     fetch(`/api/admin/users/impersonate?userId=${userId}`)
       .then(r => r.json())
       .then(async data => {
-        if (!data.success) { alert('Failed: ' + data.error); window.close(); return; }
+        if (!data.success) { alert('Failed: ' + (data.error || 'Unknown error')); window.close(); return; }
 
-        // Set cookie via a dedicated endpoint
         await fetch('/api/admin/users/impersonate/set-cookie', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -35,5 +34,17 @@ export default function ImpersonatePage() {
         <p className="text-xs text-gray-400">Please wait</p>
       </div>
     </div>
+  );
+}
+
+export default function ImpersonatePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ImpersonateContent />
+    </Suspense>
   );
 }

@@ -31,7 +31,6 @@ const transactionSchema = new mongoose.Schema({
   },
   reference: {
     type: String,
-    sparse: true, // allows multiple null values
   },
   metadata: {
     type: mongoose.Schema.Types.Mixed,
