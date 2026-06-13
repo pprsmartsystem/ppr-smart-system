@@ -1,14 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MagnifyingGlassIcon, UsersIcon, LockClosedIcon, LockOpenIcon } from '@heroicons/react/24/outline';
-import { PageHeader, StatusBadge, ActionBtn } from '@/components/ui/AdminComponents';
+import { MagnifyingGlassIcon, UsersIcon, LockClosedIcon, LockOpenIcon, MinusCircleIcon } from '@heroicons/react/24/outline';
+import { PageHeader, StatusBadge, ActionBtn, AdminModal } from '@/components/ui/AdminComponents';
 import toast from 'react-hot-toast';
 
 export default function MasterDistributorUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeductModal, setShowDeductModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [deductAmount, setDeductAmount] = useState('');
+  const [deductRemark, setDeductRemark] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -42,6 +46,30 @@ export default function MasterDistributorUsersPage() {
         fetchUsers();
       } else {
         toast.error(data.error || 'Failed to update user status');
+      }
+    } catch {
+      toast.error('Something went wrong');
+    }
+  };
+
+  const handleDeduct = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/masterdistributor/users/deduct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedUser._id, amount: parseFloat(deductAmount), remark: deductRemark }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message);
+        setShowDeductModal(false);
+        setDeductAmount('');
+        setDeductRemark('');
+        setSelectedUser(null);
+        fetchUsers();
+      } else {
+        toast.error(data.error || 'Failed to deduct');
       }
     } catch {
       toast.error('Something went wrong');
@@ -121,20 +149,16 @@ export default function MasterDistributorUsersPage() {
                   <td className="py-3 px-4"><p className="text-xs text-gray-400">{new Date(user.createdAt).toLocaleDateString('en-IN')}</p></td>
                   <td className="py-3 px-4">
                     <div className="flex justify-end gap-1">
+                      <ActionBtn
+                        icon={MinusCircleIcon}
+                        onClick={() => { setSelectedUser(user); setDeductAmount(''); setDeductRemark(''); setShowDeductModal(true); }}
+                        color="text-orange-600 hover:bg-orange-50"
+                        title="Deduct Wallet Balance"
+                      />
                       {user.status === 'blocked' ? (
-                        <ActionBtn 
-                          icon={LockOpenIcon} 
-                          onClick={() => handleBlockUnblock(user._id, user.status)} 
-                          color="text-green-600 hover:bg-green-50" 
-                          title="Unblock User" 
-                        />
+                        <ActionBtn icon={LockOpenIcon} onClick={() => handleBlockUnblock(user._id, user.status)} color="text-green-600 hover:bg-green-50" title="Unblock User" />
                       ) : (
-                        <ActionBtn 
-                          icon={LockClosedIcon} 
-                          onClick={() => handleBlockUnblock(user._id, user.status)} 
-                          color="text-red-600 hover:bg-red-50" 
-                          title="Block User" 
-                        />
+                        <ActionBtn icon={LockClosedIcon} onClick={() => handleBlockUnblock(user._id, user.status)} color="text-red-600 hover:bg-red-50" title="Block User" />
                       )}
                     </div>
                   </td>
@@ -145,6 +169,51 @@ export default function MasterDistributorUsersPage() {
         </div>
         {filtered.length === 0 && <div className="text-center py-12 text-sm text-gray-400">No users found</div>}
       </div>
+      {/* Deduct Modal */}
+      {showDeductModal && selectedUser && (
+        <AdminModal
+          title="Deduct Wallet Balance"
+          subtitle={`From ${selectedUser.name} · Current: ₹${selectedUser.walletBalance?.toFixed(2) || '0.00'}`}
+          onClose={() => { setShowDeductModal(false); setDeductAmount(''); setDeductRemark(''); setSelectedUser(null); }}
+        >
+          <form onSubmit={handleDeduct} className="space-y-4">
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+              <p className="text-xs text-gray-500">Current Wallet Balance</p>
+              <p className="text-2xl font-bold text-gray-900">₹{selectedUser.walletBalance?.toFixed(2) || '0.00'}</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount to Deduct (₹) <span className="text-red-500">*</span></label>
+              <input
+                type="number"
+                value={deductAmount}
+                onChange={e => setDeductAmount(e.target.value)}
+                className="input-field"
+                min="0.01"
+                max={selectedUser.walletBalance}
+                step="0.01"
+                required
+                autoFocus
+                placeholder="Enter amount"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason <span className="text-red-500">*</span></label>
+              <textarea
+                value={deductRemark}
+                onChange={e => setDeductRemark(e.target.value)}
+                className="input-field resize-none"
+                rows={3}
+                required
+                placeholder="Reason for deduction..."
+              />
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => { setShowDeductModal(false); setDeductAmount(''); setDeductRemark(''); setSelectedUser(null); }} className="flex-1 btn-secondary">Cancel</button>
+              <button type="submit" className="flex-1 py-3 rounded-xl bg-orange-600 text-white font-semibold hover:bg-orange-700">Deduct Balance</button>
+            </div>
+          </form>
+        </AdminModal>
+      )}
     </div>
   );
 }
